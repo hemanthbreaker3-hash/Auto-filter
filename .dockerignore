@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+*.log
+.DS_Store
+.venv/
+venv/
+node_modules/
+DOWNLOADS/
+*.session
+*.session-journal
