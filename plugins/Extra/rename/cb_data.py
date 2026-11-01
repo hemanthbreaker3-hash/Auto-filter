@@ -1,6 +1,6 @@
 # Don't Remove Credit @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
 from plugins.Extra.utils import progress_for_pyrogram, convert, humanbytes
 from pyrogram import Client, filters
@@ -38,7 +38,7 @@ async def doc(bot, update):
             path = await bot.download_media(
                     message=file,
                     progress=progress_for_pyrogram,
-                    progress_args=("**⚠️ Please wait VJ Hack is in processing**", ms, c_time))
+                    progress_args=("**⚠️ Please wait TGBoxOffice is processing**", ms, c_time))
         except Exception as e:
             await ms.edit(e)
             return 

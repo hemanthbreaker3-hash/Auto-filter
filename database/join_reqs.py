@@ -1,6 +1,6 @@
 # Don't Remove Credit @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
 import motor.motor_asyncio
 from info import AUTH_CHANNEL, OTHER_DB_URI

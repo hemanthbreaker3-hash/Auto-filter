@@ -1,6 +1,6 @@
 # Don't Remove Credit @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
 import datetime, time, asyncio
 from pyrogram import Client, filters
@@ -50,7 +50,7 @@ async def pm_broadcast(bot, message):
 
 # Don't Remove Credit Tg - @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
 @Client.on_message(filters.command("grp_broadcast") & filters.user(ADMINS))
 async def broadcast_group(bot, message):

@@ -1,6 +1,6 @@
-# Don't Remove Credit @VJ_Bots
-# Subscribe YouTube Channel For Amazing Bot @Tech_VJ
-# Ask Doubt on telegram @KingVJ01
+# Don't Remove Credit @TGBoxOffice
+# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
+# Ask Doubt on telegram @TGBoxOffice
 
 import asyncio
 import logging

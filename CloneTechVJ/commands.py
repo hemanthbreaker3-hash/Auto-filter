@@ -1,8 +1,8 @@
 # Don't Remove Credit @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
-# Clone Code Credit : YT - @TGBoxOffice / TG - @TGBoxOffice / GitHub - @VJBots
+# Clone Code Credit : YT - @TGBoxOffice / TG - @TGBoxOffice / GitHub - @TGBoxOffice
 
 import os, string, logging, random, asyncio, time, datetime, re, sys, json, base64
 from Script import script

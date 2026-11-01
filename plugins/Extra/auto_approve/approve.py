@@ -1,6 +1,6 @@
 # Don't Remove Credit @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
 import os, string, logging, random, asyncio, time, datetime, re, sys, json, base64
 from Script import script
@@ -48,7 +48,7 @@ async def auto_approve(client, message: ChatJoinRequest):
         return 
     data = await db.get_msg_command(ap_user_id)
         
-    if data.split("-", 1)[0] == "VJ":
+    if data.split("-", 1)[0] == "TGB":
         user_id = int(data.split("-", 1)[1])
         vj = await referal_add_user(user_id, message.from_user.id)
         if vj and PREMIUM_AND_REFERAL_MODE == True:

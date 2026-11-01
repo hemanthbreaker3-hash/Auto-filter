@@ -1,8 +1,8 @@
-# Don't Remove Credit @VJ_Bots
-# Subscribe YouTube Channel For Amazing Bot @Tech_VJ
-# Ask Doubt on telegram @KingVJ01
+# Don't Remove Credit @TGBoxOffice
+# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
+# Ask Doubt on telegram @TGBoxOffice
 
-# Clone Code Credit : YT - @Tech_VJ / TG - @VJ_Bots / GitHub - @VJBots
+# Clone Code Credit : YT - @TGBoxOffice / TG - @TGBoxOffice / GitHub - @TGBoxOffice
 
 import logging, logging.config, pytz, asyncio
 
@@ -39,6 +39,7 @@ from plugins.clone import restart_bots
 from TechVJ.bot import TechVJBot
 from TechVJ.util.keepalive import ping_server
 from TechVJ.bot.clients import initialize_clients
+from TechVJ.bot.register_commands import register_all_commands
 
 # Pyrogram loads the configured plugins package automatically on start.
 # Do not import the same modules a second time; doing so registers duplicate handlers.
@@ -61,6 +62,10 @@ async def start():
     temp.ME = me.id
     temp.U_NAME = me.username
     temp.B_NAME = me.first_name
+    # Deploy succeeded and the bot's identity is confirmed — register the
+    # "/" command menu with Telegram now (public menu for everyone, full
+    # menu for ADMINS). See TechVJ/bot/register_commands.py.
+    await register_all_commands(TechVJBot)
     logging.info(script.LOGO)
     tz = pytz.timezone('Asia/Kolkata')
     today = date.today()

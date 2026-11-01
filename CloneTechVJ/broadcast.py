@@ -1,8 +1,8 @@
 # Don't Remove Credit @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
-# Clone Code Credit : YT - @TGBoxOffice / TG - @TGBoxOffice / GitHub - @VJBots
+# Clone Code Credit : YT - @TGBoxOffice / TG - @TGBoxOffice / GitHub - @TGBoxOffice
 
 import datetime, time, asyncio
 from pyrogram import Client, filters
@@ -56,7 +56,7 @@ async def pm_broadcast(bot, message):
 
 # Don't Remove Credit Tg - @TGBoxOffice
 # Subscribe YouTube Channel For Amazing Bot https://youtube.com/@TGBoxOffice
-# Ask Doubt on telegram @KingVJ01
+# Ask Doubt on telegram @TGBoxOffice
 
 async def broadcast_messages(bot_id, user_id, message):
     try:
