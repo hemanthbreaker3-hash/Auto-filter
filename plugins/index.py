@@ -1,249 +1,229 @@
-# Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
+# TGBoxOffice indexing manager
+import asyncio
+import logging
+import re
+import uuid
 
-import logging, re, asyncio
-from utils import temp
-from info import ADMINS
-from plugins.admin_filter import ADMIN_FILTER
 from pyrogram import Client, filters, enums
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import FloodWait, MessageNotModified
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, ChatAdminRequired, UsernameInvalid, UsernameNotModified
-from info import INDEX_REQ_CHANNEL as LOG_CHANNEL
-from database.ia_filterdb import save_file, save_files_batch
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from info import ADMINS, INDEX_REQ_CHANNEL as LOG_CHANNEL
+from utils import temp
+from database.ia_filterdb import save_files_batch
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-lock = asyncio.Lock()
 
-@Client.on_callback_query(filters.regex(r'^index'))
-async def index_files(bot, query):
-    if query.data.startswith('index_cancel'):
-        if query.from_user.id not in ADMINS:
-            return await query.answer("Only bot admins can cancel indexing.", show_alert=True)
-        temp.CANCEL = True
-        return await query.answer("Cancellation requested…")
+TASKS = {}
+TASK_LOCK = asyncio.Lock()
+LINK_RE = re.compile(r"^(?:https?://)?(?:t\.me|telegram\.me|telegram\.dog)/(?:c/)?([0-9]+|[A-Za-z_0-9]+)/([0-9]+)(?:\?.*)?$")
+
+def parse_link(value):
+    match = LINK_RE.match(value.strip().rstrip("/"))
+    if not match:
+        raise ValueError("Invalid Telegram message link.")
+    chat, msg_id = match.group(1), int(match.group(2))
+    if chat.isnumeric():
+        chat = int("-100" + chat)
+    return chat, msg_id
+
+def controls(task_id):
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📊 View progress", callback_data=f"idxctl:view:{task_id}"),
+         InlineKeyboardButton("✖ Cancel", callback_data=f"idxctl:cancel:{task_id}")],
+    ])
+
+def status_text(t):
+    return (
+        f"<b>📁 INDEX TASK #{t['short']}</b>\n\n"
+        f"Status: <b>{t['status']}</b>\n"
+        f"Messages scanned: <code>{t['processed']:,}</code>\n"
+        f"Files saved: <code>{t['saved']:,}</code>\n"
+        f"Duplicates: <code>{t['duplicates']:,}</code>\n"
+        f"Deleted: <code>{t['deleted']:,}</code>\n"
+        f"Non-media: <code>{t['skipped']:,}</code>\n"
+        f"Errors: <code>{t['errors']:,}</code>"
+    )
+
+async def run_index(bot, task_id, chat, first_id, last_id, status_msg):
+    t = TASKS[task_id]
+    batch = []
+    last_update = 0
+    async def flush():
+        if not batch:
+            return
+        pending = list(batch)
+        batch.clear()
+        try:
+            saved, duplicates, failed = await save_files_batch(pending)
+            t["saved"] += saved
+            t["duplicates"] += duplicates
+            t["errors"] += failed
+        except Exception:
+            logger.exception("Index batch write failed")
+            t["errors"] += len(pending)
+
+    async def update(force=False):
+        nonlocal last_update
+        now = asyncio.get_running_loop().time()
+        if not force and now - last_update < 4:
+            return
+        last_update = now
+        try:
+            await status_msg.edit_text(status_text(t), reply_markup=controls(task_id) if t["status"] == "RUNNING" else None)
+        except MessageNotModified:
+            pass
+        except Exception:
+            logger.debug("Unable to update index status", exc_info=True)
+
+    t["status"] = "RUNNING"
+    await update(True)
+    try:
+        async for msg in bot.iter_messages(chat, last_id, first_id):
+            if t["cancel"]:
+                break
+            t["processed"] += 1
+            if msg.empty:
+                t["deleted"] += 1
+            elif not msg.media:
+                t["skipped"] += 1
+            elif msg.media not in (enums.MessageMediaType.VIDEO, enums.MessageMediaType.AUDIO, enums.MessageMediaType.DOCUMENT):
+                t["skipped"] += 1
+            else:
+                media = getattr(msg, msg.media.value, None)
+                if media and getattr(media, "file_id", None):
+                    media.caption = msg.caption
+                    batch.append(media)
+                    if len(batch) >= 100:
+                        await flush()
+                else:
+                    t["skipped"] += 1
+            if t["processed"] % 100 == 0:
+                await flush()
+                await update()
+        await flush()
+        t["status"] = "CANCELLED" if t["cancel"] else "COMPLETED"
+    except Exception as exc:
+        await flush()
+        t["status"] = "FAILED"
+        t["error"] = str(exc)[:300]
+        logger.exception("Index task failed")
+    await update(True)
+    if t.get("error"):
+        try:
+            await status_msg.edit_text(status_text(t) + f"\n\n<code>{t['error']}</code>")
+        except Exception:
+            pass
+
+async def start_task(bot, user_id, chat, first_id, last_id):
+    try:
+        chat_obj = await bot.get_chat(chat)
+        chat = chat_obj.id
+        await bot.get_messages(chat, last_id)
+    except ChannelInvalid:
+        raise ValueError("This may be a private channel/group. Add the bot as an admin first.")
+    except (UsernameInvalid, UsernameNotModified):
+        raise ValueError("Invalid channel or message link.")
+    except Exception as exc:
+        raise ValueError(f"Cannot access the channel/messages: {exc}")
+    task_id = uuid.uuid4().hex[:8]
+    status_msg = await bot.send_message(user_id, f"Starting index task <code>{task_id}</code>…")
+    TASKS[task_id] = {
+        "id": task_id, "short": task_id.upper(), "user": user_id, "chat": chat,
+        "first": first_id, "last": last_id, "status": "QUEUED", "cancel": False,
+        "processed": 0, "saved": 0, "duplicates": 0, "deleted": 0,
+        "skipped": 0, "errors": 0, "message": status_msg,
+    }
+    TASKS[task_id]["runner"] = asyncio.create_task(run_index(bot, task_id, chat, first_id, last_id, status_msg))
+    return task_id
+
+@Client.on_message(filters.private & filters.command("index"))
+async def index_command(bot, message):
+    if not message.from_user or message.from_user.id not in ADMINS:
+        return await message.reply_text("Admin access only.")
+    args = message.text.split(maxsplit=1)
+    if len(args) > 1:
+        value = args[1].strip()
+        parts = re.split(r"(?=https?://(?:t\\.me|telegram\\.me|telegram\\.dog)/)", value)
+        try:
+            if len(parts) == 1:
+                first_chat, first_id = parse_link(parts[0])
+                last_chat, last_id = first_chat, first_id
+            elif len(parts) == 2:
+                first_chat, first_id = parse_link(parts[0].rstrip("-"))
+                last_chat, last_id = parse_link(parts[1])
+            else:
+                raise ValueError("Invalid range. Send two Telegram message links separated by a hyphen.")
+            if first_chat != last_chat:
+                return await message.reply_text("Both links must belong to the same channel/group.")
+            if first_id > last_id:
+                first_id, last_id = last_id, first_id
+            task_id = await start_task(bot, message.from_user.id, first_chat, first_id, last_id)
+            return await message.reply_text(f"✅ Index task <code>{task_id}</code> started.\\nUse /indexstatus to manage tasks.")
+        except Exception as exc:
+            return await message.reply_text(f"❌ {exc}")
+    prompt = await message.reply_text(
+        "Send one Telegram message link or a range:\n"
+        "<code>https://t.me/c/123456/100-https://t.me/c/123456/500</code>"
+    )
+    try:
+        response = await bot.ask(message.chat.id, "Waiting for your link/range…", timeout=120)
+        fake = type("M", (), {"text": "/index " + (response.text or ""), "from_user": message.from_user,
+                               "reply_text": response.reply_text, "chat": message.chat})()
+        await index_command(bot, fake)
+    except asyncio.TimeoutError:
+        await prompt.edit_text("⌛ Index request timed out.")
+
+@Client.on_message(filters.private & filters.command("indexstatus"))
+async def index_status(bot, message):
+    if not message.from_user or message.from_user.id not in ADMINS:
+        return await message.reply_text("Admin access only.")
+    tasks = list(TASKS.values())
+    if not tasks:
+        return await message.reply_text("No indexing tasks found.")
+    rows = []
+    for t in tasks[-20:]:
+        rows.append([InlineKeyboardButton(
+            f"{'🟢' if t['status']=='RUNNING' else '⚪'} {t['short']} · {t['status']} · {t['saved']} saved",
+            callback_data=f"idxctl:view:{t['id']}"
+        )])
+    await message.reply_text("📊 <b>INDEX TASKS</b>\nSelect a task to view progress and actions:", reply_markup=InlineKeyboardMarkup(rows))
+
+@Client.on_callback_query(filters.regex(r"^idxctl:(view|cancel):([a-f0-9]+)$"))
+async def index_controls(bot, query):
+    if not query.from_user or query.from_user.id not in ADMINS:
+        return await query.answer("Admin access only.", show_alert=True)
+    _, action, task_id = query.data.split(":")
+    t = TASKS.get(task_id)
+    if not t:
+        return await query.answer("Task not found or bot restarted.", show_alert=True)
+    if action == "cancel":
+        if t["status"] != "RUNNING":
+            return await query.answer(f"Task is already {t['status'].lower()}.", show_alert=True)
+        t["cancel"] = True
+        await query.answer("Cancellation requested. The current batch will be saved.")
+        try:
+            await query.message.edit_text(status_text(t) + "\n\n⏳ Cancellation requested…")
+        except Exception:
+            pass
+        return
+    await query.answer("Task status updated.")
+    await query.message.edit_text(status_text(t), reply_markup=controls(task_id) if t["status"] == "RUNNING" else None)
+
+# Legacy moderator request callback compatibility.
+@Client.on_callback_query(filters.regex(r"^index#"))
+async def legacy_index_callback(bot, query):
     if query.from_user.id not in ADMINS:
         return await query.answer("Admin access only.", show_alert=True)
     try:
-        _, raju, chat, lst_msg_id, from_user = query.data.split("#")
-    except ValueError:
-        return await query.answer("Invalid indexing request.", show_alert=True)
-    if raju == 'reject':
-        await query.message.delete()
-        await bot.send_message(
-            int(from_user),
-            f'Your Submission for indexing {chat} has been decliened by our moderators.',
-            reply_to_message_id=int(lst_msg_id)
-        )
-        return
-
-    if lock.locked():
-        return await query.answer('Wait until previous process complete.', show_alert=True)
-    msg = query.message
-
-    await query.answer('Processing...⏳', show_alert=True)
-    if int(from_user) not in ADMINS:
-        await bot.send_message(
-            int(from_user),
-            f'Your Submission for indexing {chat} has been accepted by our moderators and will be added soon.',
-            reply_to_message_id=int(lst_msg_id)
-        )
-    await msg.edit(
-        "Starting Indexing",
-        reply_markup=InlineKeyboardMarkup(
-            [[InlineKeyboardButton('Cancel', callback_data='index_cancel')]]
-        )
-    )
-    try:
-        chat = int(chat)
-    except:
-        chat = chat
-    await index_files_to_db(int(lst_msg_id), chat, msg, bot)
-
-
-@Client.on_message(filters.private & filters.command('index'))
-async def send_for_index(bot, message):
-    vj = await bot.ask(message.chat.id, "**Now Send Me Your Channel Last Post Link Or Forward A Last Message From Your Index Channel.\n\nAnd You Can Set Skip Number By - /setskip yourskipnumber**")
-    if vj.forward_from_chat and vj.forward_from_chat.type == enums.ChatType.CHANNEL:
-        last_msg_id = vj.forward_from_message_id
-        chat_id = vj.forward_from_chat.username or vj.forward_from_chat.id
-    elif vj.text:
-        regex = re.compile(r"(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)/(\d+)$")
-        match = regex.match(vj.text)
-        if not match:
-            return await vj.reply('Invalid link\n\nTry again by /index')
-        chat_id = match.group(4)
-        last_msg_id = int(match.group(5))
-        if chat_id.isnumeric():
-            chat_id  = int(("-100" + chat_id))
-    else:
-        return
-    try:
-        await bot.get_chat(chat_id)
-    except ChannelInvalid:
-        return await vj.reply('This may be a private channel / group. Make me an admin over there to index the files.')
-    except (UsernameInvalid, UsernameNotModified):
-        return await vj.reply('Invalid Link specified.')
-    except Exception as e:
-        logger.exception(e)
-        return await vj.reply(f'Errors - {e}')
-    try:
-        k = await bot.get_messages(chat_id, last_msg_id)
-    except:
-        return await message.reply('Make Sure That Iam An Admin In The Channel, if channel is private')
-    if k.empty:
-        return await message.reply('This may be group and iam not a admin of the group.')
-
-    if message.from_user.id in ADMINS:
-        buttons = [[
-            InlineKeyboardButton('Yes', callback_data=f'index#accept#{chat_id}#{last_msg_id}#{message.from_user.id}')
-        ],[
-            InlineKeyboardButton('close', callback_data='close_data')
-        ]]
-        reply_markup = InlineKeyboardMarkup(buttons)
-        return await message.reply(
-            f'Do you Want To Index This Channel/ Group ?\n\nChat ID/ Username: <code>{chat_id}</code>\nLast Message ID: <code>{last_msg_id}</code>',
-            reply_markup=reply_markup
-        )
-
-    if type(chat_id) is int:
-        try:
-            link = (await bot.create_chat_invite_link(chat_id)).invite_link
-        except ChatAdminRequired:
-            return await message.reply('Make sure iam an admin in the chat and have permission to invite users.')
-    else:
-        link = f"@{message.forward_from_chat.username}"
-    buttons = [[
-        InlineKeyboardButton('Accept Index', callback_data=f'index#accept#{chat_id}#{last_msg_id}#{message.from_user.id}')
-    ],[
-        InlineKeyboardButton('Reject Index', callback_data=f'index#reject#{chat_id}#{message.id}#{message.from_user.id}'),
-    ]]
-    reply_markup = InlineKeyboardMarkup(buttons)
-    await bot.send_message(
-        LOG_CHANNEL,
-        f'#IndexRequest\n\nBy : {message.from_user.mention} (<code>{message.from_user.id}</code>)\nChat ID/ Username - <code> {chat_id}</code>\nLast Message ID - <code>{last_msg_id}</code>\nInviteLink - {link}',
-        reply_markup=reply_markup
-    )
-    await message.reply('ThankYou For the Contribution, Wait For My Moderators to verify the files.')
-
-
-@Client.on_message(filters.command('setskip') & ADMIN_FILTER)
-async def set_skip_number(bot, message):
-    if ' ' in message.text:
-        _, skip = message.text.split(" ")
-        try:
-            skip = int(skip)
-            if skip < 0:
-                raise ValueError
-        except ValueError:
-            return await message.reply("Skip number must be a non-negative integer.")
-        await message.reply(f"Successfully set indexing start message ID as {skip}")
-        temp.CURRENT = skip
-    else:
-        await message.reply("Give me a skip number")
-
-
-async def index_files_to_db(lst_msg_id, chat, msg, bot):
-    """Index messages using bounded bulk database writes and throttled updates."""
-    total_files = duplicate = errors = deleted = no_media = unsupported = 0
-    processed = 0
-    batch = []
-    batch_size = 100
-    last_update = asyncio.get_running_loop().time()
-
-    async def flush_batch():
-        nonlocal total_files, duplicate, errors, batch
-        if not batch:
-            return
-        pending, batch = batch, []
-        try:
-            saved, duplicates, failed = await save_files_batch(pending)
-            total_files += saved
-            duplicate += duplicates
-            errors += failed
-        except Exception:
-            logger.exception("Bulk index database write failed")
-            errors += len(pending)
-
-    async def update_progress(force=False):
-        nonlocal last_update
-        now = asyncio.get_running_loop().time()
-        if not force and processed % 300 != 0 and now - last_update < 5:
-            return
-        last_update = now
-        text = (
-            f"<b>⚡ INDEXING IN PROGRESS</b>\n\n"
-            f"Messages scanned: <code>{processed:,}</code>\n"
-            f"Files saved: <code>{total_files:,}</code>\n"
-            f"Duplicates skipped: <code>{duplicate:,}</code>\n"
-            f"Deleted messages: <code>{deleted:,}</code>\n"
-            f"Non-media/unsupported: <code>{no_media + unsupported:,}</code>\n"
-            f"Errors: <code>{errors:,}</code>"
-        )
-        try:
-            await msg.edit_text(text, reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("✖ Cancel indexing", callback_data="index_cancel")]]
-            ))
-        except MessageNotModified:
-            pass
-        except Exception as exc:
-            logger.debug("Index progress update skipped: %s", exc)
-
-    async with lock:
-        try:
-            temp.CANCEL = False
-            # The project's iterator fetches message IDs in chunks of up to 200.
-            async for message in bot.iter_messages(chat, int(lst_msg_id), int(temp.CURRENT)):
-                if temp.CANCEL:
-                    await flush_batch()
-                    await update_progress(force=True)
-                    await msg.edit_text(
-                        f"<b>⏹ INDEXING CANCELLED</b>\n\nSaved: <code>{total_files:,}</code>\n"
-                        f"Duplicates: <code>{duplicate:,}</code>\nErrors: <code>{errors:,}</code>"
-                    )
-                    return
-                processed += 1
-                if message.empty:
-                    deleted += 1
-                elif not message.media:
-                    no_media += 1
-                elif message.media not in (enums.MessageMediaType.VIDEO,
-                                           enums.MessageMediaType.AUDIO,
-                                           enums.MessageMediaType.DOCUMENT):
-                    unsupported += 1
-                else:
-                    media = getattr(message, message.media.value, None)
-                    if not media or not getattr(media, "file_id", None):
-                        unsupported += 1
-                    else:
-                        media.caption = message.caption
-                        batch.append(media)
-                        if len(batch) >= batch_size:
-                            await flush_batch()
-                if processed % 300 == 0:
-                    await update_progress()
-
-            await flush_batch()
-            await update_progress(force=True)
-            await msg.edit_text(
-                f"<b>✅ INDEXING COMPLETED</b>\n\n"
-                f"Messages scanned: <code>{processed:,}</code>\n"
-                f"Files saved: <code>{total_files:,}</code>\n"
-                f"Duplicates skipped: <code>{duplicate:,}</code>\n"
-                f"Deleted messages: <code>{deleted:,}</code>\n"
-                f"Non-media/unsupported: <code>{no_media + unsupported:,}</code>\n"
-                f"Errors: <code>{errors:,}</code>"
-            )
-        except Exception as exc:
-            await flush_batch()
-            logger.exception("Indexing failed")
-            try:
-                await msg.edit_text(
-                    f"<b>⚠️ INDEXING STOPPED</b>\n<code>{str(exc)[:700]}</code>\n\n"
-                    f"Saved: <code>{total_files:,}</code> | Duplicates: <code>{duplicate:,}</code> | Errors: <code>{errors:,}</code>"
-                )
-            except Exception:
-                pass
-
+        _, action, chat, msg_id, requester = query.data.split("#")
+        if action == "reject":
+            await query.message.delete()
+            return await bot.send_message(int(requester), "Your indexing request was declined.")
+        task_id = await start_task(bot, query.from_user.id, chat, int(msg_id), int(msg_id))
+        await query.answer(f"Index task {task_id} started.", show_alert=True)
+        await query.message.edit_text(f"Accepted. Task <code>{task_id}</code> started.")
+    except Exception as exc:
+        await query.answer(str(exc)[:180], show_alert=True)

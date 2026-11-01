@@ -1796,18 +1796,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             stream_enabled = await db.get_link_feature("stream_enabled")
             download_enabled = await db.get_link_feature("download_enabled")
             if not stream_enabled and not download_enabled:
-                disabled_text = "⚠️ Stream and download links are currently disabled by the admin."
-                try:
-                    await query.message.edit_text(disabled_text, reply_markup=None)
-                except Exception:
-                    try:
-                        await query.message.edit_caption(caption=disabled_text, reply_markup=None)
-                    except Exception:
-                        try:
-                            await query.message.edit_reply_markup(reply_markup=None)
-                        except Exception:
-                            pass
-                return await query.answer(disabled_text, show_alert=True)
+                return await query.answer("⚠️ Stream and download links are currently disabled by the admin.", show_alert=True)
             log_msg = await client.send_cached_media(chat_id=LOG_CHANNEL, file_id=file_id)
             stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
             download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
