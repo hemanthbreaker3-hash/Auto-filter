@@ -22,6 +22,18 @@ class TechVJXBot(Client):
             sleep_threshold=5,
         )
 
+    async def send_rich_message(self, chat_id, html, **kwargs):
+        from TechVJ.util.telegram_rich import send_rich_message
+        return await send_rich_message(self, chat_id, html, **kwargs)
+
+    async def send_rich_markdown(self, chat_id, markdown, **kwargs):
+        from TechVJ.util.telegram_rich import send_rich_markdown
+        return await send_rich_markdown(self, chat_id, markdown, **kwargs)
+
+    async def send_styled_message(self, chat_id, text, buttons=None, **kwargs):
+        from TechVJ.util.telegram_rich import send_styled_message
+        return await send_styled_message(self, chat_id, text, buttons=buttons, **kwargs)
+
     async def set_self(self):
         temp.BOT = self
     
