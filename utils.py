@@ -22,7 +22,14 @@ logger.setLevel(logging.INFO)
 join_db = JoinReqs
 BTN_URL_REGEX = re.compile(r"(\[([^\[]+?)\]\((buttonurl|buttonalert):(?:/{0,2})(.+?)(:same)?\))")
 
-imdb = Cinemagoer() 
+try:
+    imdb = Cinemagoer()  # defaults to the 'http' access system (scrapes imdb.com); do NOT pin the git master
+    # branch of cinemagoer in requirements.txt — recent master defaults to the 's3' access system, which
+    # needs a local cinemagoer.db SQLite dump and crashes the bot on startup. Use the cinemagoer==2023.5.1
+    # PyPI release instead.
+except Exception as e:
+    logger.error(f"Cinemagoer failed to initialize, IMDb lookups will be disabled: {e}")
+    imdb = None
 TOKENS = {}
 VERIFIED = {}
 BANNED = {}
@@ -94,6 +101,8 @@ async def is_subscribed(bot, query):
         return False
 
 async def get_poster(query, bulk=False, id=False, file=None):
+    if imdb is None:
+        return None
     if not id:
         query = (query.strip()).lower()
         title = query
@@ -107,7 +116,11 @@ async def get_poster(query, bulk=False, id=False, file=None):
                 year = list_to_str(year[:1]) 
         else:
             year = None
-        movieid = imdb.search_movie(title.lower(), results=10)
+        try:
+            movieid = imdb.search_movie(title.lower(), results=10)
+        except Exception as e:
+            logger.error(f"IMDb search failed for '{title}': {e}")
+            return None
         if not movieid:
             return None
         if year:
@@ -124,7 +137,11 @@ async def get_poster(query, bulk=False, id=False, file=None):
         movieid = movieid[0].movieID
     else:
         movieid = query
-    movie = imdb.get_movie(movieid)
+    try:
+        movie = imdb.get_movie(movieid)
+    except Exception as e:
+        logger.error(f"IMDb get_movie failed for id '{movieid}': {e}")
+        return None
     if not movie:
         return None
     if movie.get("original air date"):
