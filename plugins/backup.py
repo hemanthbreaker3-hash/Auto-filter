@@ -189,7 +189,7 @@ async def save_menu(client, message):
         ]))
 
 
-@Client.on_callback_query(filters.regex(r"^tgbox_save:"))
+@Client.on_callback_query(filters.regex(r"^tgbox_save:"), group=-1)
 async def save_callbacks(client, query):
     uid = query.from_user.id
     if uid not in info.ADMINS:

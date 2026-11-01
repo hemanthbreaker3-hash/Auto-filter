@@ -6,6 +6,7 @@ import re, math, logging, secrets, mimetypes, time
 from info import *
 from aiohttp import web
 from aiohttp.http_exceptions import BadStatusLine
+from database.users_chats_db import db
 from TechVJ.bot import multi_clients, work_loads, TechVJBot
 from TechVJ.server.exceptions import FIleNotFound, InvalidHash
 from TechVJ import StartTime, __version__
@@ -22,6 +23,8 @@ async def root_route_handler(request):
 @routes.get(r"/watch/{path:\S+}", allow_head=True)
 async def stream_handler(request: web.Request):
     try:
+        if not STREAM_MODE or not await db.get_link_feature("stream_enabled"):
+            raise web.HTTPForbidden(text="Stream is currently disabled by the admin.")
         path = request.match_info["path"]
         match = re.search(r"^([a-zA-Z0-9_-]{6})(\d+)$", path)
         if match:
@@ -31,6 +34,8 @@ async def stream_handler(request: web.Request):
             id = int(re.search(r"(\d+)(?:\/\S+)?", path).group(1))
             secure_hash = request.rel_url.query.get("hash")
         return web.Response(text=await render_page(id, secure_hash), content_type='text/html')
+    except web.HTTPException:
+        raise
     except InvalidHash as e:
         raise web.HTTPForbidden(text=e.message)
     except FIleNotFound as e:
@@ -44,6 +49,10 @@ async def stream_handler(request: web.Request):
 @routes.get(r"/{path:\S+}", allow_head=True)
 async def stream_handler(request: web.Request):
     try:
+        stream_enabled = await db.get_link_feature("stream_enabled")
+        download_enabled = await db.get_link_feature("download_enabled")
+        if not STREAM_MODE or (not stream_enabled and not download_enabled):
+            raise web.HTTPForbidden(text="Stream and download are currently disabled by the admin.")
         path = request.match_info["path"]
         match = re.search(r"^([a-zA-Z0-9_-]{6})(\d+)$", path)
         if match:
@@ -53,6 +62,8 @@ async def stream_handler(request: web.Request):
             id = int(re.search(r"(\d+)(?:\/\S+)?", path).group(1))
             secure_hash = request.rel_url.query.get("hash")
         return await media_streamer(request, id, secure_hash)
+    except web.HTTPException:
+        raise
     except InvalidHash as e:
         raise web.HTTPForbidden(text=e.message)
     except FIleNotFound as e:
@@ -147,4 +158,3 @@ async def media_streamer(request: web.Request, id: int, secure_hash: str):
             "Accept-Ranges": "bytes",
         },
     )
-

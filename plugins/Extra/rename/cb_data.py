@@ -3,12 +3,14 @@
 # Ask Doubt on telegram @TGBoxOffice
 
 from plugins.Extra.utils import progress_for_pyrogram, convert, humanbytes
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from plugins.Extra.rename.filedetect import refunc
 from pyrogram.types import (  InlineKeyboardButton, InlineKeyboardMarkup,ForceReply)
 from hachoir.metadata import extractMetadata
 from hachoir.parser import createParser
 from database.users_chats_db import db
+from utils import format_file_caption
+from info import CHNL_LNK
 import os 
 import humanize
 from PIL import Image
@@ -17,14 +19,14 @@ import logging
 logger = logging.getLogger(__name__)
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
 
-@Client.on_callback_query(filters.regex('cancel'))
+@Client.on_callback_query(filters.regex(r"^cancel$"))
 async def cancel(bot,update):
     try:
         await update.message.delete()
     except:
         return
 
-@Client.on_callback_query(filters.regex("upload"))
+@Client.on_callback_query(filters.regex(r"^upload_"))
 async def doc(bot, update):
     try:
         type = update.data.split("_")[1]
@@ -57,16 +59,8 @@ async def doc(bot, update):
         ph_path = None 
         media = getattr(file, file.media.value)
         filesize = humanize.naturalsize(media.file_size) 
-        c_caption = await db.get_caption(update.message.chat.id)
         c_thumb = await db.get_thumbnail(update.message.chat.id)
-        if c_caption:
-             try:
-                 caption = c_caption.format(filename=new_filename, filesize=humanize.naturalsize(media.file_size), duration=convert(duration))
-             except Exception as e:
-                 await ms.edit(text=f"Your caption Error unexpected keyword ●> ({e})")
-                 return 
-        else:
-            caption = f"**{new_filename}**"
+        caption = format_file_caption(getattr(file, "caption", None), new_filename, CHNL_LNK)
         if (media.thumbs or c_thumb):
             if c_thumb:
                ph_path = await bot.download_media(c_thumb) 
@@ -81,30 +75,33 @@ async def doc(bot, update):
         try:
            if type == "document":
               await bot.send_document(
-	            update.message.chat.id,
+                    update.message.chat.id,
                     document=file_path,
                     thumb=ph_path, 
-                    caption=caption, 
+                    caption=caption,
+                    parse_mode=enums.ParseMode.HTML,
                     progress=progress_for_pyrogram,
                     progress_args=( "⚠️__**Please wait...**__\n__Processing file upload....__",  ms, c_time)) 
            elif type == "video": 
                await bot.send_video(
-	            update.message.chat.id,
-	            video=file_path,
-	            caption=caption,
-	            thumb=ph_path,
-	            duration=duration,
-	            progress=progress_for_pyrogram,
-	            progress_args=( "⚠️__**Please wait...**__\n__Processing file upload....__",  ms, c_time)) 
+                    update.message.chat.id,
+                    video=file_path,
+                    caption=caption,
+                    parse_mode=enums.ParseMode.HTML,
+                    thumb=ph_path,
+                    duration=duration,
+                    progress=progress_for_pyrogram,
+                    progress_args=( "⚠️__**Please wait...**__\n__Processing file upload....__",  ms, c_time)) 
            elif type == "audio": 
                await bot.send_audio(
-	            update.message.chat.id,
-	            audio=file_path,
-	            caption=caption,
-	            thumb=ph_path,
-	            duration=duration,
-	            progress=progress_for_pyrogram,
-	            progress_args=( "⚠️__**Please wait...**__\n__Processing file upload....__",  ms, c_time)) 
+                    update.message.chat.id,
+                    audio=file_path,
+                    caption=caption,
+                    parse_mode=enums.ParseMode.HTML,
+                    thumb=ph_path,
+                    duration=duration,
+                    progress=progress_for_pyrogram,
+                    progress_args=( "⚠️__**Please wait...**__\n__Processing file upload....__",  ms, c_time)) 
         except Exception as e: 
             await ms.edit(f" Erro {e}") 
             os.remove(file_path)
@@ -117,4 +114,3 @@ async def doc(bot, update):
            os.remove(ph_path) 
     except Exception as e:
         logger.error(f"error : {e}")
-		    

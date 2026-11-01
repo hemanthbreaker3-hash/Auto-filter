@@ -11,7 +11,7 @@ from database.ia_filterdb import get_file_details, unpack_new_file_id, get_bad_f
 from database.users_chats_db import db, delete_all_referal_users, get_referal_users_count, get_referal_all_users, referal_add_user
 from database.join_reqs import JoinReqs
 from info import *
-from utils import get_settings, pub_is_subscribed, get_size, is_subscribed, save_group_settings, temp, verify_user, check_token, check_verification, get_token, get_shortlink, get_tutorial, get_seconds
+from utils import get_settings, pub_is_subscribed, get_size, is_subscribed, save_group_settings, temp, verify_user, check_token, check_verification, get_token, get_shortlink, get_tutorial, get_seconds, format_file_caption, get_file_stream_markup
 from database.connections_mdb import active_connection
 from urllib.parse import quote_plus
 from TechVJ.util.file_properties import get_name, get_hash, get_media_file_size
@@ -128,54 +128,51 @@ async def auto_approve(client, message: ChatJoinRequest):
             BATCH_FILES[file_id] = msgs
 
         filesarr = []
+        stream_enabled = await db.get_link_feature("stream_enabled")
+        download_enabled = await db.get_link_feature("download_enabled")
+        can_link = bool(STREAM_MODE and (stream_enabled or download_enabled))
         for msg in msgs:
             title = msg.get("title")
-            size=get_size(int(msg.get("size", 0)))
-            f_caption=msg.get("caption", "")
-            if BATCH_FILE_CAPTION:
-                try:
-                    f_caption=BATCH_FILE_CAPTION.format(file_name= '' if title is None else title, file_size='' if size is None else size, file_caption='' if f_caption is None else f_caption)
-                except:
-                    f_caption=f_caption
-            if f_caption is None:
-                f_caption = f"{title}"
+            f_caption = format_file_caption(msg.get("caption"), title, CHNL_LNK)
+            reply_markup = None
             try:
-                if STREAM_MODE == True:
+                if can_link:
                     log_msg = await client.send_cached_media(chat_id=LOG_CHANNEL, file_id=msg.get("file_id"))
-                    fileName = {quote_plus(get_name(log_msg))}
                     stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
                     download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-
-                if STREAM_MODE == True:
-                    button = [[
-                        InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download),
-                        InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream)
-                    ],[
-                        InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))
-                    ]]
-                    reply_markup = InlineKeyboardMarkup(button)
-                else:
-                    reply_markup = None
+                    button = []
+                    row1 = []
+                    if download_enabled:
+                        row1.append(InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download))
+                    if stream_enabled:
+                        row1.append(InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream))
+                    if row1:
+                        button.append(row1)
+                    if stream_enabled:
+                        button.append([InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))])
+                    reply_markup = InlineKeyboardMarkup(button) if button else None
                     
-                msg = await client.send_cached_media(
+                sent_msg = await client.send_cached_media(
                     chat_id=message.from_user.id,
                     file_id=msg.get("file_id"),
                     caption=f_caption,
+                    parse_mode=enums.ParseMode.HTML,
                     protect_content=msg.get('protect', False),
                     reply_markup=reply_markup
                 )
-                filesarr.append(msg)
+                filesarr.append(sent_msg)
                 
             except FloodWait as e:
                 await asyncio.sleep(e.value)
-                msg = await client.send_cached_media(
+                sent_msg = await client.send_cached_media(
                     chat_id=message.from_user.id,
                     file_id=msg.get("file_id"),
                     caption=f_caption,
+                    parse_mode=enums.ParseMode.HTML,
                     protect_content=msg.get('protect', False),
-                    reply_markup=InlineKeyboardMarkup(button)
+                    reply_markup=reply_markup
                 )
-                filesarr.append(msg)
+                filesarr.append(sent_msg)
             except:
                 continue
             await asyncio.sleep(1) 
@@ -198,41 +195,38 @@ async def auto_approve(client, message: ChatJoinRequest):
             protect = "/pbatch" if PROTECT_CONTENT else "batch"
         diff = int(l_msg_id) - int(f_msg_id)
         filesarr = []
+        stream_enabled = await db.get_link_feature("stream_enabled")
+        download_enabled = await db.get_link_feature("download_enabled")
+        can_link = bool(STREAM_MODE and (stream_enabled or download_enabled))
         async for msg in client.iter_messages(int(f_chat_id), int(l_msg_id), int(f_msg_id)):
             if msg.media:
                 media = getattr(msg, msg.media.value)
                 file_type = msg.media
                 file = getattr(msg, file_type.value)
-                size = get_size(int(file.file_size))
                 file_name = getattr(media, 'file_name', '')
-                f_caption = getattr(msg, 'caption', file_name)
-                if BATCH_FILE_CAPTION:
-                    try:
-                        f_caption=BATCH_FILE_CAPTION.format(file_name=file_name, file_size='' if size is None else size, file_caption=f_caption)
-                    except:
-                        f_caption = getattr(msg, 'caption', '')
+                f_caption = format_file_caption(getattr(msg, 'caption', None), file_name, CHNL_LNK)
                 file_id = file.file_id
-                if STREAM_MODE == True:
+                reply_markup = None
+                if can_link:
                     log_msg = await client.send_cached_media(chat_id=LOG_CHANNEL, file_id=file_id)
-                    fileName = {quote_plus(get_name(log_msg))}
                     stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
                     download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
- 
-                if STREAM_MODE == True:
-                    button = [[
-                        InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download),
-                        InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream)
-                    ],[
-                        InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))
-                    ]]
-                    reply_markup = InlineKeyboardMarkup(button)
-                else:
-                    reply_markup = None
+                    button = []
+                    row1 = []
+                    if download_enabled:
+                        row1.append(InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download))
+                    if stream_enabled:
+                        row1.append(InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream))
+                    if row1:
+                        button.append(row1)
+                    if stream_enabled:
+                        button.append([InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))])
+                    reply_markup = InlineKeyboardMarkup(button) if button else None
                 try:
-                    p = await msg.copy(message.chat.id, caption=f_caption, protect_content=True if protect == "/pbatch" else False, reply_markup=reply_markup)
+                    p = await msg.copy(message.chat.id, caption=f_caption, parse_mode=enums.ParseMode.HTML, protect_content=True if protect == "/pbatch" else False, reply_markup=reply_markup)
                 except FloodWait as e:
                     await asyncio.sleep(e.value)
-                    p = await msg.copy(message.chat.id, caption=f_caption, protect_content=True if protect == "/pbatch" else False, reply_markup=reply_markup)
+                    p = await msg.copy(message.chat.id, caption=f_caption, parse_mode=enums.ParseMode.HTML, protect_content=True if protect == "/pbatch" else False, reply_markup=reply_markup)
                 except:
                     continue
             elif msg.empty:
@@ -317,15 +311,7 @@ async def auto_approve(client, message: ChatJoinRequest):
             file_id = file["file_id"]
             files1 = await get_file_details(file_id)
             title = files1["file_name"]
-            size=get_size(files1["file_size"])
-            f_caption=files1["caption"]
-            if CUSTOM_FILE_CAPTION:
-                try:
-                    f_caption=CUSTOM_FILE_CAPTION.format(file_name= '' if title is None else title, file_size='' if size is None else size, file_caption='' if f_caption is None else f_caption)
-                except:
-                    f_caption=f_caption
-            if f_caption is None:
-                f_caption = f"@TGBoxOffice {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files1['file_name'].split()))}"
+            f_caption = format_file_caption(files1.get("caption"), title, CHNL_LNK)
             if not await db.has_premium_access(message.from_user.id):
                 if not await check_verification(client, message.from_user.id) and VERIFY == True:
                     btn = [[
@@ -342,15 +328,12 @@ async def auto_approve(client, message: ChatJoinRequest):
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
                     return
-            if STREAM_MODE == True:
-                button = [[InlineKeyboardButton('sᴛʀᴇᴀᴍ ᴀɴᴅ ᴅᴏᴡɴʟᴏᴀᴅ', callback_data=f'generate_stream_link:{file_id}')]]
-                reply_markup=InlineKeyboardMarkup(button)
-            else:
-                reply_markup = None
+            reply_markup = await get_file_stream_markup(file_id)
             msg = await client.send_cached_media(
                 chat_id=message.from_user.id,
                 file_id=file_id,
                 caption=f_caption,
+                parse_mode=enums.ParseMode.HTML,
                 protect_content=True if pre == 'allfilesp' else False,
                 reply_markup=reply_markup
             )
@@ -406,11 +389,7 @@ async def auto_approve(client, message: ChatJoinRequest):
                         reply_markup=InlineKeyboardMarkup(btn)
                     )
                     return
-            if STREAM_MODE == True:
-                button = [[InlineKeyboardButton('sᴛʀᴇᴀᴍ ᴀɴᴅ ᴅᴏᴡɴʟᴏᴀᴅ', callback_data=f'generate_stream_link:{file_id}')]]
-                reply_markup=InlineKeyboardMarkup(button)
-            else:
-                reply_markup = None
+            reply_markup = await get_file_stream_markup(file_id)
             msg = await client.send_cached_media(
                 chat_id=message.from_user.id,
                 file_id=file_id,
@@ -420,14 +399,8 @@ async def auto_approve(client, message: ChatJoinRequest):
             filetype = msg.media
             file = getattr(msg, filetype.value)
             title = file.file_name
-            size=get_size(file.file_size)
-            f_caption = f"<code>{title}</code>"
-            if CUSTOM_FILE_CAPTION:
-                try:
-                    f_caption=CUSTOM_FILE_CAPTION.format(file_name= '' if title is None else title, file_size='' if size is None else size, file_caption='')
-                except:
-                    return
-            await msg.edit_caption(caption=f_caption)
+            f_caption = format_file_caption(getattr(msg, 'caption', None), title, CHNL_LNK)
+            await msg.edit_caption(caption=f_caption, parse_mode=enums.ParseMode.HTML)
             btn = [[InlineKeyboardButton("✅ ɢᴇᴛ ғɪʟᴇ ᴀɢᴀɪɴ ✅", callback_data=f'del#{file_id}')]]
             k = await msg.reply(text=f"<blockquote><b><u>❗️❗️❗️IMPORTANT❗️️❗️❗️</u></b>\n\nᴛʜɪs ᴍᴇssᴀɢᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ <b><u>10 mins</u> 🫥 <i></b>(ᴅᴜᴇ ᴛᴏ ᴄᴏᴘʏʀɪɢʜᴛ ɪssᴜᴇs)</i>.\n\n<b><i>ᴘʟᴇᴀsᴇ ғᴏʀᴡᴀʀᴅ ᴛʜɪs ᴍᴇssᴀɢᴇ ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs ᴏʀ ᴀɴʏ ᴘʀɪᴠᴀᴛᴇ ᴄʜᴀᴛ.</i></b></blockquote>")
             await asyncio.sleep(600)
@@ -440,15 +413,7 @@ async def auto_approve(client, message: ChatJoinRequest):
         
     files = files_
     title = files["file_name"]
-    size=get_size(files["file_size"])
-    f_caption=files["caption"]
-    if CUSTOM_FILE_CAPTION:
-        try:
-            f_caption=CUSTOM_FILE_CAPTION.format(file_name= '' if title is None else title, file_size='' if size is None else size, file_caption='' if f_caption is None else f_caption)
-        except:
-            f_caption=f_caption
-    if f_caption is None:
-        f_caption = f"@TGBoxOffice {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files['file_name'].split()))}"
+    f_caption = format_file_caption(files.get("caption"), title, CHNL_LNK)
     if not await db.has_premium_access(message.from_user.id):
         if not await check_verification(client, message.from_user.id) and VERIFY == True:
             btn = [[
@@ -465,15 +430,12 @@ async def auto_approve(client, message: ChatJoinRequest):
                 reply_markup=InlineKeyboardMarkup(btn)
             )
             return
-    if STREAM_MODE == True:
-        button = [[InlineKeyboardButton('sᴛʀᴇᴀᴍ ᴀɴᴅ ᴅᴏᴡɴʟᴏᴀᴅ', callback_data=f'generate_stream_link:{file_id}')]]
-        reply_markup=InlineKeyboardMarkup(button)
-    else:
-        reply_markup = None
+    reply_markup = await get_file_stream_markup(file_id)
     msg = await client.send_cached_media(
         chat_id=message.from_user.id,
         file_id=file_id,
         caption=f_caption,
+        parse_mode=enums.ParseMode.HTML,
         protect_content=True if pre == 'filep' else False,
         reply_markup=reply_markup
     )
@@ -482,4 +444,4 @@ async def auto_approve(client, message: ChatJoinRequest):
     await asyncio.sleep(600)
     await msg.delete()
     await k.edit_text("<b>✅ ʏᴏᴜʀ ᴍᴇssᴀɢᴇ ɪs sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ ɪғ ʏᴏᴜ ᴡᴀɴᴛ ᴀɢᴀɪɴ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ ʙᴇʟᴏᴡ ʙᴜᴛᴛᴏɴ</b>",reply_markup=InlineKeyboardMarkup(btn))
-    return   
+    return

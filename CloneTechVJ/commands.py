@@ -14,7 +14,7 @@ from database.users_chats_db import db
 from CloneTechVJ.database.clone_bot_userdb import clonedb
 from info import *
 from shortzy import Shortzy
-from utils import get_size, temp, get_seconds, get_clone_shortlink
+from utils import get_size, temp, get_seconds, get_clone_shortlink, format_file_caption
 logger = logging.getLogger(__name__)
 
 @Client.on_message(filters.command("start") & filters.incoming)
@@ -104,12 +104,8 @@ async def start(client, message):
             file_id = mg.file_id
             files_ = await get_file_details(vj_file_id)
             files1 = files_
-            title = ' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files1['file_name'].split()))
-            size=get_size(files1['file_size'])
-            f_caption=files1['caption']
-            if f_caption is None:
-                f_caption = f"@TGBoxOffice {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files1['file_name'].split()))}"
             up = cd.get("update_channel_link") or CHNL_LNK
+            f_caption = format_file_caption(files1.get('caption'), files1.get('file_name'), up)
             if up:
                 button = [[
                     InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)
@@ -122,6 +118,7 @@ async def start(client, message):
                 chat_id=message.from_user.id,
                 file_id=file_id,
                 caption=f_caption,
+                parse_mode=enums.ParseMode.HTML,
                 protect_content=False,
                 reply_markup=reply_markup
             )
@@ -152,12 +149,8 @@ async def start(client, message):
     if not files_:
         return await message.reply('**No such file exist.**')
     files = files_
-    title = ' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files['file_name'].split()))
-    size=get_size(files['file_size'])
-    f_caption=files['caption']
-    if f_caption is None:
-        f_caption = f"@TGBoxOffice {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files['file_name'].split()))}"
     up = cd.get("update_channel_link") or CHNL_LNK
+    f_caption = format_file_caption(files.get('caption'), files.get('file_name'), up)
     if up:
         button = [[
             InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)
@@ -173,6 +166,7 @@ async def start(client, message):
         chat_id=message.from_user.id,
         file_id=file_id,
         caption=f_caption,
+        parse_mode=enums.ParseMode.HTML,
         protect_content=False,
         reply_markup=reply_markup
     )
@@ -195,7 +189,7 @@ async def settings(client, message):
         link = 'https://t.me/VJ_Botz'
         await shortzy.convert(link)
     except Exception as e:
-        await message.reply(f"**Error In Converting Link**\n\n<code>{e}</code>\n\n**Start The Process Again By - /settings**", reply_markup=InlineKeyboardMarkup(btn))
+        await message.reply(f"**Error In Converting Link**\n\n<code>{e}</code>\n\n**Start The Process Again By - /settings**")
         return
     tutorial = await client.ask(message.chat.id, "<b>Now Send Me Your How To Open Link means Tutorial Link.</b>")
     if not tutorial.text.startswith(('https://', 'http://')):

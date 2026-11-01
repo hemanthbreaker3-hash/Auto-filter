@@ -13,6 +13,24 @@ import datetime
 my_client = MongoClient(OTHER_DB_URI)
 mydb = my_client["referal_user"]
 
+
+def normalize_channel_id(value):
+    """Normalize a Telegram channel/supergroup ID to standard negative -100 format when numeric."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s or not s.lstrip("-").isdigit():
+        return None
+    num = int(s)
+    if num == 0:
+        return None
+    if num > 0:
+        return int(f"-100{num}")
+    if not str(num).startswith("-100") and len(str(abs(num))) >= 8:
+        return int(f"-100{abs(num)}")
+    return num
+
+
 async def referal_add_user(user_id, ref_user_id):
     user_db = mydb[str(user_id)]
     user = {'_id': ref_user_id}
@@ -253,26 +271,58 @@ class Database:
         from info import CHANNELS
         doc = await self.config.find_one({"_id": "file_channels"})
         saved = doc.get("channels", []) if doc else []
-        return sorted(set(int(x) for x in (list(CHANNELS) + saved)))
+        removed_env = set()
+        for item in (doc.get("removed_channels", []) if doc else []):
+            norm = normalize_channel_id(item)
+            if norm is not None:
+                removed_env.add(norm)
+        result = set()
+        for raw in list(CHANNELS) + list(saved):
+            norm = normalize_channel_id(raw)
+            if norm is not None and norm not in removed_env:
+                result.add(norm)
+        return sorted(result)
 
     async def add_managed_channel(self, channel_id):
+        norm = normalize_channel_id(channel_id)
+        if norm is None:
+            raise ValueError("Invalid channel ID")
         await self.config.update_one(
             {"_id": "file_channels"},
-            {"$addToSet": {"channels": int(channel_id)}},
+            {
+                "$addToSet": {"channels": int(norm)},
+                "$pull": {"removed_channels": int(norm)},
+            },
             upsert=True
         )
+        return int(norm)
 
     async def remove_managed_channel(self, channel_id):
-        from info import CHANNELS
-        # Environment channels are immutable from the panel; only DB-added channels are removable.
-        if int(channel_id) in CHANNELS:
+        norm = normalize_channel_id(channel_id)
+        if norm is None:
             return False
+        raw_int = int(channel_id) if str(channel_id).lstrip("-").isdigit() else norm
         await self.config.update_one(
             {"_id": "file_channels"},
-            {"$pull": {"channels": int(channel_id)}},
+            {
+                "$pull": {"channels": {"$in": [int(norm), int(raw_int)]}},
+                "$addToSet": {"removed_channels": int(norm)},
+            },
             upsert=True
         )
         return True
+
+    async def auto_index_enabled(self):
+        doc = await self.config.find_one({"_id": "file_channels"})
+        return bool(doc.get("auto_index", True)) if doc else True
+
+    async def set_auto_index_enabled(self, enabled):
+        await self.config.update_one(
+            {"_id": "file_channels"},
+            {"$set": {"auto_index": bool(enabled)}},
+            upsert=True
+        )
+        return bool(enabled)
 
     async def get_force_subscribe_chats(self):
         """Return dynamically configured force-subscribe channels and groups."""
@@ -357,28 +407,28 @@ class Database:
 
     async def get_thumbnail(self, id):
         user = await self.col.find_one({'id': int(id)})
-        return user.get('file_id', None)
+        return user.get('file_id', None) if user else None
 
     async def set_caption(self, id, caption):
         await self.col.update_one({'id': int(id)}, {'$set': {'caption': caption}})
 
     async def get_caption(self, id):
         user = await self.col.find_one({'id': int(id)})
-        return user.get('caption', None)
+        return user.get('caption', None) if user else None
 
     async def set_msg_command(self, id, com):
         await self.col.update_one({'id': int(id)}, {'$set': {'message_command': com}})
 
     async def get_msg_command(self, id):
         user = await self.col.find_one({'id': int(id)})
-        return user.get('message_command', None)
+        return user.get('message_command', None) if user else None
 
     async def set_save(self, id, save):
         await self.col.update_one({'id': int(id)}, {'$set': {'save': save}})
 
     async def get_save(self, id):
         user = await self.col.find_one({'id': int(id)})
-        return user.get('save', False) 
+        return user.get('save', False) if user else False
     
 
 
@@ -397,4 +447,3 @@ class Database:
 
 
 db = Database(USER_DB_URI, DATABASE_NAME)
-

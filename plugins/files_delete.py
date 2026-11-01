@@ -8,7 +8,7 @@ from info import DELETE_CHANNELS
 from database.ia_filterdb import delete_file_everywhere, unpack_new_file_id
 
 logger = logging.getLogger(__name__)
-media_filter = filters.document | filters.video
+media_filter = filters.document | filters.video | filters.audio
 
 @Client.on_message(filters.chat(DELETE_CHANNELS) & media_filter)
 async def deletemultiplemedia(bot, message):
@@ -21,7 +21,7 @@ async def deletemultiplemedia(bot, message):
     else:
         return
 
-    file_id, file_ref = unpack_new_file_id(media.file_id)
+    file_id = unpack_new_file_id(media.file_id)
 
     deleted = delete_file_everywhere({'file_id': file_id})
     if not deleted:

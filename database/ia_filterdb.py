@@ -21,14 +21,30 @@ sec_db = sec_client[DATABASE_NAME]
 sec_col = sec_db[COLLECTION_NAME]
 
 
+def _extract_caption_text(caption_obj):
+    """Preserve the original plain caption text without modifying it."""
+    if not caption_obj:
+        return None
+    text = str(caption_obj)
+    return text if text.strip() else None
+
+
 def _make_file_document(media):
     file_id = unpack_new_file_id(media.file_id)
-    file_name = clean_file_name(media.file_name)
+    raw_caption = _extract_caption_text(getattr(media, 'caption', None))
+    raw_file_name = getattr(media, 'file_name', None)
+    if not raw_file_name:
+        if raw_caption:
+            first_line = next((line.strip() for line in raw_caption.splitlines() if line.strip()), "")
+            raw_file_name = first_line[:120] if first_line else f"media_{file_id[:12]}"
+        else:
+            raw_file_name = f"media_{file_id[:12]}"
+    file_name = clean_file_name(raw_file_name) or f"media_{file_id[:12]}"
     return {
         'file_id': file_id,
         'file_name': f"@TGBoxOffice {file_name}",
-        'file_size': media.file_size,
-        'caption': media.caption.html if media.caption else None
+        'file_size': getattr(media, 'file_size', 0) or 0,
+        'caption': raw_caption
     }
 
 
@@ -70,23 +86,26 @@ def _save_documents_sync(documents):
                        for node_id, _uri, _label, _enabled in all_node_uris())]
     file_ids = list({item['file_id'] for item in documents})
     file_names = list({item['file_name'] for item in documents})
-    existing_ids, existing_names = set(), set()
+    existing_ids, existing_name_sizes = set(), set()
     for collection in all_collections:
         try:
             existing_ids.update(row['file_id'] for row in collection.find(
                 {'file_id': {'$in': file_ids}}, {'file_id': 1}))
-            existing_names.update(row['file_name'] for row in collection.find(
-                {'file_name': {'$in': file_names}}, {'file_name': 1}))
+            existing_name_sizes.update((row.get('file_name'), row.get('file_size')) for row in collection.find(
+                {'file_name': {'$in': file_names}}, {'file_name': 1, 'file_size': 1}))
         except Exception as exc:
             print(f"[MongoDB] Skipping unreachable node during duplicate check: {exc}")
-    unique, seen_ids, seen_names = [], set(), set()
+    unique, seen_ids, seen_name_sizes = [], set(), set()
     duplicates = 0
     for item in documents:
-        fid, fname = item['file_id'], item['file_name']
-        if fid in existing_ids or fname in existing_names or fid in seen_ids or fname in seen_names:
+        fid, fname, fsize = item['file_id'], item['file_name'], item.get('file_size')
+        name_size = (fname, fsize)
+        if fid in existing_ids or name_size in existing_name_sizes or fid in seen_ids or name_size in seen_name_sizes:
             duplicates += 1
             continue
-        seen_ids.add(fid); seen_names.add(fname); unique.append(item)
+        seen_ids.add(fid)
+        seen_name_sizes.add(name_size)
+        unique.append(item)
     if not unique:
         return 0, duplicates, 0
     if not collections:
@@ -239,6 +258,8 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
     except Exception:
         regex = query
     criteria = {'file_name': regex}
+    if USE_CAPTION_FILTER:
+        criteria = {'$or': [criteria, {'caption': regex}]}
     collections = _unique_collections()
     total_results = 0
     files = []
@@ -316,5 +337,3 @@ def unpack_new_file_id(new_file_id):
         )
     )
     return file_id
-    
-

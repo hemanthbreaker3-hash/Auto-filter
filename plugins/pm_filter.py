@@ -1096,6 +1096,8 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
                 
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
+    if query.data and query.data.startswith(("idxctl:", "index#", "tgbox_panel:", "tgbox_save:")):
+        return
     if query.data == "close_data":
         await query.message.delete()
     elif query.data == "get_trail":
@@ -1795,8 +1797,12 @@ async def cb_handler(client: Client, query: CallbackQuery):
         try:
             stream_enabled = await db.get_link_feature("stream_enabled")
             download_enabled = await db.get_link_feature("download_enabled")
-            if not stream_enabled and not download_enabled:
-                return await query.answer("⚠️ Stream and download links are currently disabled by the admin.", show_alert=True)
+            if not STREAM_MODE or (not stream_enabled and not download_enabled):
+                try:
+                    await query.message.edit_reply_markup(None)
+                except Exception:
+                    pass
+                return await query.answer("⚠️ Stream and download are currently disabled by the admin.", show_alert=True)
             log_msg = await client.send_cached_media(chat_id=LOG_CHANNEL, file_id=file_id)
             stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
             download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
@@ -1806,7 +1812,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             if stream_enabled:
                 button.append([InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream),
                                InlineKeyboardButton("• ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))])
-            await query.message.edit_reply_markup(InlineKeyboardMarkup(button))
+            await query.message.edit_reply_markup(InlineKeyboardMarkup(button) if button else None)
         except Exception as e:
             print(e)
             await query.answer(f"something went wrong\n\n{e}", show_alert=True)
@@ -2096,6 +2102,10 @@ async def cb_handler(client: Client, query: CallbackQuery):
         )
 
     elif query.data == "s_txt":
+        stream_enabled = await db.get_link_feature("stream_enabled")
+        download_enabled = await db.get_link_feature("download_enabled")
+        if not STREAM_MODE or (not stream_enabled and not download_enabled):
+            return await query.answer("⚠️ Stream and download are currently disabled by the admin.", show_alert=True)
         buttons = [[
             InlineKeyboardButton('⟸ Bᴀᴄᴋ', callback_data='help')
         ]]
