@@ -257,3 +257,9 @@ New indexed files are distributed round-robin across the built-in writable file 
 - Updates channel: https://t.me/HiTLERYT
 
 These are the default support and updates links. You can override them with `SUPPORT_CHAT` and `CHNL_LNK` environment variables. Clone bots retain their individually configured update-channel link when one is set; otherwise they use the default updates channel.
+
+
+### Community links
+- Support chat: https://t.me/+6FvvEegcE3tmNTg1
+- Movie group: https://t.me/+6FvvEegcE3tmNTg1
+- Updates channel: https://t.me/HiTLERYT

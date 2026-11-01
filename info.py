@@ -102,7 +102,7 @@ PUBLIC_FILE_CHANNEL = environ.get('PUBLIC_FILE_CHANNEL', '') # Public Channel Us
 
 
 # Links
-GRP_LNK = environ.get('GRP_LNK', 'https://t.me/TGBoxOffice_Chat')
+GRP_LNK = environ.get('GRP_LNK', 'https://t.me/+6FvvEegcE3tmNTg1')
 CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/HiTLERYT')
 # Invite links start with '+', while public support usernames can be used without it.
 SUPPORT_CHAT = environ.get('SUPPORT_CHAT', '+6FvvEegcE3tmNTg1') # Support chat invite hash; URL is built as https://t.me/<value>
