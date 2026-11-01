@@ -7,10 +7,11 @@ from Script import script
 from pyrogram import Client, filters, enums
 from pyrogram.errors import ChatAdminRequired, FloodWait
 from pyrogram.types import *
-from database.ia_filterdb import col, sec_col, get_file_details, unpack_new_file_id, get_bad_files, db as vjdb, sec_db
+from database.ia_filterdb import col, sec_col, get_file_collections, count_all_file_documents, get_file_details, unpack_new_file_id, get_bad_files, db as vjdb, sec_db
 from database.users_chats_db import db, delete_all_referal_users, get_referal_users_count, get_referal_all_users, referal_add_user
 from database.join_reqs import JoinReqs
 from info import *
+from plugins.admin_filter import ADMIN_FILTER
 from pyrogram.errors.exceptions.bad_request_400 import MessageTooLong, PeerIdInvalid
 from utils import get_settings, pub_is_subscribed, get_size, is_subscribed, save_group_settings, temp, verify_user, check_token, check_verification, get_token, get_shortlink, get_tutorial, get_seconds
 from database.connections_mdb import active_connection, mydb
@@ -75,7 +76,7 @@ async def save_group(bot, message):
             await asyncio.sleep(600)
             await (temp.MELCOW['welcome']).delete()
 
-@Client.on_message(filters.command('leave') & filters.user(ADMINS))
+@Client.on_message(filters.command('leave') & ADMIN_FILTER)
 async def leave_a_chat(bot, message):
     if len(message.command) == 1:
         return await message.reply('Give me a chat id')
@@ -103,7 +104,7 @@ async def leave_a_chat(bot, message):
     except Exception as e:
         await message.reply(f'Error - {e}')
 
-@Client.on_message(filters.command('disable') & filters.user(ADMINS))
+@Client.on_message(filters.command('disable') & ADMIN_FILTER)
 async def disable_chat(bot, message):
     if len(message.command) == 1:
         return await message.reply('Give me a chat id')
@@ -139,7 +140,7 @@ async def disable_chat(bot, message):
     except Exception as e:
         await message.reply(f"Error - {e}")
 
-@Client.on_message(filters.command('enable') & filters.user(ADMINS))
+@Client.on_message(filters.command('enable') & ADMIN_FILTER)
 async def re_enable_chat(bot, message):
     if len(message.command) == 1:
         return await message.reply('Give me a chat id')
@@ -163,7 +164,7 @@ async def get_ststs(bot, message):
     try:
         total_users = await db.total_users_count()
         totl_chats = await db.total_chat_count()
-        filesp = col.count_documents({})
+        filesp = count_all_file_documents()
         stats = vjdb.command('dbStats')
         used_dbSize = (stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))
         free_dbSize = 512-used_dbSize
@@ -172,7 +173,7 @@ async def get_ststs(bot, message):
             await rju.edit(script.SEC_STATUS_TXT.format(total_users, totl_chats, filesp, round(used_dbSize, 2), round(free_dbSize, 2)))
             return 
             
-        totalsec = sec_col.count_documents({})   
+        totalsec = 0
         stats2 = sec_db.command('dbStats')
         used_dbSize2 = (stats2['dataSize']/(1024*1024))+(stats2['indexSize']/(1024*1024))
         free_dbSize2 = 512-used_dbSize2
@@ -183,7 +184,7 @@ async def get_ststs(bot, message):
     except Exception as e:
         await rju.edit(f"Error - {e}")
 
-@Client.on_message(filters.command('invite') & filters.user(ADMINS))
+@Client.on_message(filters.command('invite') & ADMIN_FILTER)
 async def gen_invite(bot, message):
     if len(message.command) == 1:
         return await message.reply('Give me a chat id')
@@ -200,7 +201,7 @@ async def gen_invite(bot, message):
         return await message.reply(f'Error {e}')
     await message.reply(f'Here is your Invite Link {link.invite_link}')
 
-@Client.on_message(filters.command('ban') & filters.user(ADMINS))
+@Client.on_message(filters.command('ban') & ADMIN_FILTER)
 async def ban_a_user(bot, message):
     if len(message.command) == 1:
         return await message.reply('Give me a user id / username')
@@ -231,7 +232,7 @@ async def ban_a_user(bot, message):
         temp.BANNED_USERS.append(k.id)
         await message.reply(f"Successfully banned {k.mention}")
     
-@Client.on_message(filters.command('unban') & filters.user(ADMINS))
+@Client.on_message(filters.command('unban') & ADMIN_FILTER)
 async def unban_a_user(bot, message):
     if len(message.command) == 1:
         return await message.reply('Give me a user id / username')
@@ -262,7 +263,7 @@ async def unban_a_user(bot, message):
         temp.BANNED_USERS.remove(k.id)
         await message.reply(f"Successfully unbanned {k.mention}")
     
-@Client.on_message(filters.command('users') & filters.user(ADMINS))
+@Client.on_message(filters.command('users') & ADMIN_FILTER)
 async def list_users(bot, message):
     # https://t.me/GetTGLink/4184
     raju = await message.reply('Getting List Of Users')
@@ -280,7 +281,7 @@ async def list_users(bot, message):
             outfile.write(out)
         await message.reply_document('users.txt', caption="List Of Users")
 
-@Client.on_message(filters.command('chats') & filters.user(ADMINS))
+@Client.on_message(filters.command('chats') & ADMIN_FILTER)
 async def list_chats(bot, message):
     raju = await message.reply('Getting List Of chats')
     chats = await db.get_all_chats()

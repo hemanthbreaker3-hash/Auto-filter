@@ -19,6 +19,9 @@ from info import ADMINS
 
 @Client.on_message(filters.command(['filter', 'add']) & filters.incoming)
 async def addfilter(client, message):
+    # /add save|load belongs to the admin backup/restore handler, not filters.
+    if message.chat.type == enums.ChatType.PRIVATE and len(message.command) > 1 and message.command[1].lower() in {'save', 'load'}:
+        return
     userid = message.from_user.id if message.from_user else None
     if not userid:
         return await message.reply(f"You are anonymous admin. Use /connect {message.chat.id} in PM")
@@ -50,7 +53,7 @@ async def addfilter(client, message):
     if (
         st.status != enums.ChatMemberStatus.ADMINISTRATOR
         and st.status != enums.ChatMemberStatus.OWNER
-        and str(userid) not in ADMINS
+        and userid not in ADMINS
     ):
         return
 
@@ -153,7 +156,7 @@ async def get_all(client, message):
     if (
         st.status != enums.ChatMemberStatus.ADMINISTRATOR
         and st.status != enums.ChatMemberStatus.OWNER
-        and str(userid) not in ADMINS
+        and userid not in ADMINS
     ):
         return
 
@@ -215,7 +218,7 @@ async def deletefilter(client, message):
     if (
         st.status != enums.ChatMemberStatus.ADMINISTRATOR
         and st.status != enums.ChatMemberStatus.OWNER
-        and str(userid) not in ADMINS
+        and userid not in ADMINS
     ):
         return
 
@@ -264,7 +267,7 @@ async def delallconfirm(client, message):
         return
 
     st = await client.get_chat_member(grp_id, userid)
-    if (st.status == enums.ChatMemberStatus.OWNER) or (str(userid) in ADMINS):
+    if (st.status == enums.ChatMemberStatus.OWNER) or (userid in ADMINS):
         await message.reply_text(
             f"This will delete all filters from '{title}'.\nDo you want to continue??",
             reply_markup=InlineKeyboardMarkup([

@@ -52,6 +52,13 @@ async def start():
     print('Initializing TGBOXOFFICE')
     bot_info = await TechVJBot.get_me()
     await initialize_clients()
+    # Load database-managed admins before command handlers become active.
+    import info as bot_info_config
+    for _admin_id in await db.get_admins():
+        if _admin_id not in bot_info_config.ADMINS:
+            bot_info_config.ADMINS.append(_admin_id)
+        if _admin_id not in bot_info_config.AUTH_USERS:
+            bot_info_config.AUTH_USERS.append(_admin_id)
     if ON_HEROKU:
         asyncio.create_task(ping_server())
     b_users, b_chats = await db.get_banned()

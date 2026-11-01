@@ -5,11 +5,12 @@
 import logging, re, asyncio
 from utils import temp
 from info import ADMINS
+from plugins.admin_filter import ADMIN_FILTER
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, MessageNotModified
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, ChatAdminRequired, UsernameInvalid, UsernameNotModified
 from info import INDEX_REQ_CHANNEL as LOG_CHANNEL
-from database.ia_filterdb import save_file
+from database.ia_filterdb import save_file, save_files_batch
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 logger = logging.getLogger(__name__)
@@ -19,9 +20,16 @@ lock = asyncio.Lock()
 @Client.on_callback_query(filters.regex(r'^index'))
 async def index_files(bot, query):
     if query.data.startswith('index_cancel'):
+        if query.from_user.id not in ADMINS:
+            return await query.answer("Only bot admins can cancel indexing.", show_alert=True)
         temp.CANCEL = True
-        return await query.answer("Cancelling Indexing")
-    _, raju, chat, lst_msg_id, from_user = query.data.split("#")
+        return await query.answer("Cancellation requested…")
+    if query.from_user.id not in ADMINS:
+        return await query.answer("Admin access only.", show_alert=True)
+    try:
+        _, raju, chat, lst_msg_id, from_user = query.data.split("#")
+    except ValueError:
+        return await query.answer("Invalid indexing request.", show_alert=True)
     if raju == 'reject':
         await query.message.delete()
         await bot.send_message(
@@ -121,72 +129,121 @@ async def send_for_index(bot, message):
     await message.reply('ThankYou For the Contribution, Wait For My Moderators to verify the files.')
 
 
-@Client.on_message(filters.command('setskip') & filters.user(ADMINS))
+@Client.on_message(filters.command('setskip') & ADMIN_FILTER)
 async def set_skip_number(bot, message):
     if ' ' in message.text:
         _, skip = message.text.split(" ")
         try:
             skip = int(skip)
-        except:
-            return await message.reply("Skip number should be an integer.")
-        await message.reply(f"Successfully set SKIP number as {skip}")
-        temp.CURRENT = int(skip)
+            if skip < 0:
+                raise ValueError
+        except ValueError:
+            return await message.reply("Skip number must be a non-negative integer.")
+        await message.reply(f"Successfully set indexing start message ID as {skip}")
+        temp.CURRENT = skip
     else:
         await message.reply("Give me a skip number")
 
 
 async def index_files_to_db(lst_msg_id, chat, msg, bot):
-    total_files = 0
-    duplicate = 0
-    errors = 0
-    deleted = 0
-    no_media = 0
-    unsupported = 0
+    """Index messages using bounded bulk database writes and throttled updates."""
+    total_files = duplicate = errors = deleted = no_media = unsupported = 0
+    processed = 0
+    batch = []
+    batch_size = 100
+    last_update = asyncio.get_running_loop().time()
+
+    async def flush_batch():
+        nonlocal total_files, duplicate, errors, batch
+        if not batch:
+            return
+        pending, batch = batch, []
+        try:
+            saved, duplicates, failed = await save_files_batch(pending)
+            total_files += saved
+            duplicate += duplicates
+            errors += failed
+        except Exception:
+            logger.exception("Bulk index database write failed")
+            errors += len(pending)
+
+    async def update_progress(force=False):
+        nonlocal last_update
+        now = asyncio.get_running_loop().time()
+        if not force and processed % 300 != 0 and now - last_update < 5:
+            return
+        last_update = now
+        text = (
+            f"<b>⚡ INDEXING IN PROGRESS</b>\n\n"
+            f"Messages scanned: <code>{processed:,}</code>\n"
+            f"Files saved: <code>{total_files:,}</code>\n"
+            f"Duplicates skipped: <code>{duplicate:,}</code>\n"
+            f"Deleted messages: <code>{deleted:,}</code>\n"
+            f"Non-media/unsupported: <code>{no_media + unsupported:,}</code>\n"
+            f"Errors: <code>{errors:,}</code>"
+        )
+        try:
+            await msg.edit_text(text, reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("✖ Cancel indexing", callback_data="index_cancel")]]
+            ))
+        except MessageNotModified:
+            pass
+        except Exception as exc:
+            logger.debug("Index progress update skipped: %s", exc)
+
     async with lock:
         try:
-            current = temp.CURRENT
             temp.CANCEL = False
-            async for message in bot.iter_messages(chat, lst_msg_id, temp.CURRENT):
+            # The project's iterator fetches message IDs in chunks of up to 200.
+            async for message in bot.iter_messages(chat, int(lst_msg_id), int(temp.CURRENT)):
                 if temp.CANCEL:
-                    await msg.edit(f"Successfully Cancelled!!\n\nSaved <code>{total_files}</code> files to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>")
-                    break
-                current += 1
-                if current % 30 == 0:
-                    can = [[InlineKeyboardButton('Cancel', callback_data='index_cancel')]]
-                    reply = InlineKeyboardMarkup(can)
-                    try:
-                        await msg.edit_text(
-                            text=f"Total messages fetched: <code>{current}</code>\nTotal messages saved: <code>{total_files}</code>\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>",
-                            reply_markup=reply
-                        )
-                    except MessageNotModified:
-                        pass
+                    await flush_batch()
+                    await update_progress(force=True)
+                    await msg.edit_text(
+                        f"<b>⏹ INDEXING CANCELLED</b>\n\nSaved: <code>{total_files:,}</code>\n"
+                        f"Duplicates: <code>{duplicate:,}</code>\nErrors: <code>{errors:,}</code>"
+                    )
+                    return
+                processed += 1
                 if message.empty:
                     deleted += 1
-                    continue
                 elif not message.media:
                     no_media += 1
-                    continue
-                elif message.media not in [enums.MessageMediaType.VIDEO, enums.MessageMediaType.AUDIO, enums.MessageMediaType.DOCUMENT]:
+                elif message.media not in (enums.MessageMediaType.VIDEO,
+                                           enums.MessageMediaType.AUDIO,
+                                           enums.MessageMediaType.DOCUMENT):
                     unsupported += 1
-                    continue
-                media = getattr(message, message.media.value, None)
-                if not media:
-                    unsupported += 1
-                    continue
-                media.caption = message.caption
-                aynav, vnay = await save_file(media)
-                if aynav:
-                    total_files += 1
-                elif vnay == 0:
-                    duplicate += 1
-                elif vnay == 2:
-                    errors += 1
-        except Exception as e:
-            logger.exception(e)
-            k = await msg.edit(f'Error: {e}')
-            await k.reply_text(f'Succesfully saved <code>{total_files}</code> to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>')
-            await k.reply_text("**If You Get Message Not Modified Error Then Skip Your Saved File Then Index Again**")
-        else:
-            await msg.edit(f'Succesfully saved <code>{total_files}</code> to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>')
+                else:
+                    media = getattr(message, message.media.value, None)
+                    if not media or not getattr(media, "file_id", None):
+                        unsupported += 1
+                    else:
+                        media.caption = message.caption
+                        batch.append(media)
+                        if len(batch) >= batch_size:
+                            await flush_batch()
+                if processed % 300 == 0:
+                    await update_progress()
+
+            await flush_batch()
+            await update_progress(force=True)
+            await msg.edit_text(
+                f"<b>✅ INDEXING COMPLETED</b>\n\n"
+                f"Messages scanned: <code>{processed:,}</code>\n"
+                f"Files saved: <code>{total_files:,}</code>\n"
+                f"Duplicates skipped: <code>{duplicate:,}</code>\n"
+                f"Deleted messages: <code>{deleted:,}</code>\n"
+                f"Non-media/unsupported: <code>{no_media + unsupported:,}</code>\n"
+                f"Errors: <code>{errors:,}</code>"
+            )
+        except Exception as exc:
+            await flush_batch()
+            logger.exception("Indexing failed")
+            try:
+                await msg.edit_text(
+                    f"<b>⚠️ INDEXING STOPPED</b>\n<code>{str(exc)[:700]}</code>\n\n"
+                    f"Saved: <code>{total_files:,}</code> | Duplicates: <code>{duplicate:,}</code> | Errors: <code>{errors:,}</code>"
+                )
+            except Exception:
+                pass
 

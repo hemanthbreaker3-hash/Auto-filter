@@ -218,3 +218,42 @@ Selling The Codes To Other People For Money Is *Strictly Prohibited*.</b>
 4. In the bot's private chat, an ID listed in `ADMINS` can use `/panel`. Use `/panel add -100...` and `/panel remove -100...` to manage additional file channels. `/panel` also shows user, group, file, and channel totals.
 
 **Important:** a Telegram bot token by itself is not sufficient for this project. Pyrogram also requires Telegram API credentials (`API_ID` and `API_HASH`), this version stores users and channel configuration in MongoDB (`DATABASE_URI`), and a trusted administrator ID (`ADMINS`) is required so that nobody can claim the admin panel. These can be added in the hosting environment later, but must be present before the bot can start securely. Never publish your `.env` file or bot token.
+
+## Admin panel, Telegram rich UI and database backups
+
+See [ADMIN-PANEL-BACKUP.md](ADMIN-PANEL-BACKUP.md) for the interactive `/panel`, persistent admin management, Telegram Rich Message/native button-style compatibility, and `/add save` / `/add load confirm` database backup and restore commands.
+
+## Panel-managed Force Subscribe
+
+Owners/admins can manage global Force Subscribe destinations from `/panel`:
+
+- `/panel fsub add CHAT_ID` — add a channel, group, or supergroup (the bot must be an administrator).
+- `/panel fsub remove CHAT_ID` — remove a panel-managed destination.
+- `/panel fsub list` — list configured destinations.
+- `/panel fsub on` and `/panel fsub off` — enable or disable panel-managed destinations.
+
+The legacy `AUTH_CHANNEL` environment setting remains active independently. Existing per-group `/fsub` and `/nofsub` settings continue to work.
+
+## Faster indexing
+
+`/index` now scans Telegram messages in bounded batches and writes file metadata to MongoDB in bulk on a worker thread. Progress updates are throttled, cancellation flushes pending files, and duplicate/error totals are reported separately. Telegram rate limits and MongoDB/network performance still depend on the source chat, bot permissions, and hosting environment.
+
+## Panel-managed multiple MongoDB file stores
+
+Open `/panel` → **MongoDB Manager**, or use these admin-only commands:
+
+- `/panel mongo add mongodb+srv://USER:PASS@HOST/DB` — validates and adds a file-store node.
+- `/panel mongo list [PAGE]` — shows enabled state, connectivity and indexed-file counts (15 per page).
+- `/panel mongo stats` — shows the first page and live node status.
+- `/panel mongo enable ID` / `/panel mongo disable ID` — controls whether a node receives new indexed files.
+- `/panel mongo remove ID` — removes a node from rotation; it does not delete its stored data.
+
+New indexed files are distributed round-robin across the built-in writable file stores and every enabled panel-managed node. Search, duplicate checks, deletion, statistics, backup and restore include all registered nodes, including disabled nodes so existing files remain accessible. The node registry is stored in the configured auxiliary MongoDB (`OTHER_DB_URI`), so keep that database available and backed up. MongoDB connection URIs contain credentials; only send them in the bot's private admin chat and keep database access restricted.
+
+
+### Community links
+
+- Support chat: https://t.me/+6FvvEegcE3tmNTg1
+- Updates channel: https://t.me/HiTLERYT
+
+These are the default support and updates links. You can override them with `SUPPORT_CHAT` and `CHNL_LNK` environment variables. Clone bots retain their individually configured update-channel link when one is set; otherwise they use the default updates channel.

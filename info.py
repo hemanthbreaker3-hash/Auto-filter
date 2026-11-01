@@ -35,6 +35,7 @@ PICS = (environ.get('PICS', 'https://files.catbox.moe/v7vbxo.jpg')).split()
 
 # Admins & Users
 ADMINS = [int(admin) for admin in environ.get('ADMINS', environ.get('ADMIN_ID', '')).split() if admin.lstrip('-').isdigit()] # For Multiple Id Use One Space Between Each.
+OWNER_ADMINS = tuple(ADMINS)  # Deployment-configured owners cannot be removed from the panel.
 auth_users = [int(user) if id_pattern.search(user) else user for user in environ.get('AUTH_USERS', '').split()]  # For Multiple Id Use One Space Between Each.
 AUTH_USERS = (auth_users + ADMINS) if auth_users else list(ADMINS)
 
@@ -102,8 +103,9 @@ PUBLIC_FILE_CHANNEL = environ.get('PUBLIC_FILE_CHANNEL', '') # Public Channel Us
 
 # Links
 GRP_LNK = environ.get('GRP_LNK', 'https://t.me/TGBoxOffice_Chat')
-CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/TGBoxOffice')
-SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'TGBoxOffice_Chat') # Support Chat Link Without https:// or @
+CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/HiTLERYT')
+# Invite links start with '+', while public support usernames can be used without it.
+SUPPORT_CHAT = environ.get('SUPPORT_CHAT', '+6FvvEegcE3tmNTg1') # Support chat invite hash; URL is built as https://t.me/<value>
 OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/TGBoxOffice')
 
 # True Or False

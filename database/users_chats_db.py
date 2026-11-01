@@ -233,6 +233,21 @@ class Database:
         return (await self.db.command("dbstats"))['dataSize']
 
 
+    async def get_admins(self):
+        """Return persistent admins; deployment admins remain authoritative."""
+        doc = await self.config.find_one({"_id": "admins"})
+        return sorted(set(int(x) for x in (doc.get("admins", []) if doc else []) if str(x).lstrip("-").isdigit()))
+
+    async def add_admin(self, user_id):
+        await self.config.update_one(
+            {"_id": "admins"}, {"$addToSet": {"admins": int(user_id)}}, upsert=True
+        )
+
+    async def remove_admin(self, user_id):
+        await self.config.update_one(
+            {"_id": "admins"}, {"$pull": {"admins": int(user_id)}}, upsert=True
+        )
+
     async def get_managed_channels(self):
         """Return configured file-index channels, including environment defaults."""
         from info import CHANNELS
@@ -258,6 +273,36 @@ class Database:
             upsert=True
         )
         return True
+
+    async def get_force_subscribe_chats(self):
+        """Return dynamically configured force-subscribe channels and groups."""
+        doc = await self.config.find_one({"_id": "force_subscribe"})
+        return sorted(set(int(x) for x in (doc.get("chats", []) if doc else []) if str(x).lstrip("-").isdigit()))
+
+    async def add_force_subscribe_chat(self, chat_id):
+        await self.config.update_one(
+            {"_id": "force_subscribe"},
+            {"$addToSet": {"chats": int(chat_id)}},
+            upsert=True
+        )
+
+    async def remove_force_subscribe_chat(self, chat_id):
+        await self.config.update_one(
+            {"_id": "force_subscribe"},
+            {"$pull": {"chats": int(chat_id)}},
+            upsert=True
+        )
+
+    async def force_subscribe_enabled(self):
+        doc = await self.config.find_one({"_id": "force_subscribe"})
+        return bool(doc.get("enabled", True)) if doc else True
+
+    async def set_force_subscribe_enabled(self, enabled):
+        await self.config.update_one(
+            {"_id": "force_subscribe"},
+            {"$set": {"enabled": bool(enabled)}},
+            upsert=True
+        )
 
     async def get_user(self, user_id):
         user_data = await self.users.find_one({"id": user_id})

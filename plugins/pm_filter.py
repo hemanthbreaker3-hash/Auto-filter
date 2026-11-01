@@ -10,9 +10,9 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQ
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, UserIsBlocked, MessageNotModified, PeerIdInvalid
 from pyrogram.errors.exceptions.bad_request_400 import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
-from utils import get_size, is_subscribed, pub_is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap
+from utils import get_size, is_subscribed, pub_is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, has_force_subscribe
 from database.users_chats_db import db
-from database.ia_filterdb import col, sec_col, db as vjdb, sec_db, get_file_details, get_search_results, get_bad_files
+from database.ia_filterdb import col, sec_col, delete_file_everywhere, get_file_collections, count_all_file_documents, db as vjdb, sec_db, get_file_details, get_search_results, get_bad_files
 from database.filters_mdb import del_all, find_filter, get_filters
 from database.connections_mdb import mydb, active_connection, all_connections, delete_connection, if_active, make_active, make_inactive
 from database.gfilters_mdb import find_gfilter, get_gfilters, del_allg
@@ -1165,7 +1165,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             return await query.answer(MSG_ALRT)
 
         st = await client.get_chat_member(grp_id, userid)
-        if (st.status == enums.ChatMemberStatus.OWNER) or (str(userid) in ADMINS):
+        if (st.status == enums.ChatMemberStatus.OWNER) or (userid in ADMINS):
             await del_all(query.message, grp_id, title)
         else:
             await query.answer("Yᴏᴜ ɴᴇᴇᴅ ᴛᴏ ʙᴇ Gʀᴏᴜᴘ Oᴡɴᴇʀ ᴏʀ ᴀɴ Aᴜᴛʜ Usᴇʀ ᴛᴏ ᴅᴏ ᴛʜᴀᴛ!", show_alert=True)
@@ -1180,7 +1180,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         elif chat_type in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
             grp_id = query.message.chat.id
             st = await client.get_chat_member(grp_id, userid)
-            if (st.status == enums.ChatMemberStatus.OWNER) or (str(userid) in ADMINS):
+            if (st.status == enums.ChatMemberStatus.OWNER) or (userid in ADMINS):
                 await query.message.delete()
                 try:
                     await query.message.reply_to_message.delete()
@@ -1455,7 +1455,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start=file_{file_id}")
     
     elif query.data.startswith("checksub"):
-        if AUTH_CHANNEL and not await is_subscribed(client, query):
+        if await has_force_subscribe() and not await is_subscribed(client, query):
             await query.answer("Jᴏɪɴ ᴏᴜʀ Bᴀᴄᴋ-ᴜᴘ ᴄʜᴀɴɴᴇʟ ᴍᴀʜɴ! 😒", show_alert=True)
             return
         ident, kk, file_id = query.data.split("#")
@@ -1502,14 +1502,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 for file in files:
                     file_ids = file["file_id"]
                     file_name = file["file_name"]
-                    result = col.delete_one({
-                        'file_id': file_ids,
-                    })
-                    if not result.deleted_count:
-                        result = sec_col.delete_one({
-                            'file_id': file_ids,
-                        })
-                    if result.deleted_count:
+                    deleted_count = delete_file_everywhere({'file_id': file_ids})
+                    if deleted_count:
                         logger.info(f'File Found for your query {keyword}! Successfully deleted {file_name} from database.')
                     deleted += 1
                     if deleted % 50 == 0:
@@ -1527,7 +1521,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         if (
                 st.status != enums.ChatMemberStatus.ADMINISTRATOR
                 and st.status != enums.ChatMemberStatus.OWNER
-                and str(userid) not in ADMINS
+                and userid not in ADMINS
         ):
             await query.answer("Yᴏᴜ Dᴏɴ'ᴛ Hᴀᴠᴇ Tʜᴇ Rɪɢʜᴛs Tᴏ Dᴏ Tʜɪs !", show_alert=True)
             return
@@ -1603,7 +1597,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         if (
                 st.status != enums.ChatMemberStatus.ADMINISTRATOR
                 and st.status != enums.ChatMemberStatus.OWNER
-                and str(userid) not in ADMINS
+                and userid not in ADMINS
         ):
             await query.answer("Yᴏᴜ Dᴏɴ'ᴛ Hᴀᴠᴇ Tʜᴇ Rɪɢʜᴛs Tᴏ Dᴏ Tʜɪs !", show_alert=True)
             return
@@ -2142,8 +2136,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
         reply_markup = InlineKeyboardMarkup(buttons)
         total_users = await db.total_users_count()
         totl_chats = await db.total_chat_count()
-        filesp = col.count_documents({})
-        totalsec = sec_col.count_documents({})
+        filesp = count_all_file_documents()
+        totalsec = 0
         stats = vjdb.command('dbStats')
         used_dbSize = (stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))
         free_dbSize = 512-used_dbSize
@@ -2172,8 +2166,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
         reply_markup = InlineKeyboardMarkup(buttons)
         total_users = await db.total_users_count()
         totl_chats = await db.total_chat_count()
-        filesp = col.count_documents({})
-        totalsec = sec_col.count_documents({})
+        filesp = count_all_file_documents()
+        totalsec = 0
         stats = vjdb.command('dbStats')
         used_dbSize = (stats['dataSize']/(1024*1024))+(stats['indexSize']/(1024*1024))
         free_dbSize = 512-used_dbSize

@@ -55,50 +55,109 @@ class temp(object):
     IMDB_CAP = {}
 
 
+async def get_force_subscribe_chats():
+    """Get environment and panel-managed force-subscribe destinations."""
+    from info import AUTH_CHANNEL
+    configured = []
+    if AUTH_CHANNEL:
+        configured.append(int(AUTH_CHANNEL))
+    try:
+        if await db.force_subscribe_enabled():
+            configured.extend(await db.get_force_subscribe_chats())
+    except Exception as exc:
+        logger.warning("Could not load panel force-subscribe settings: %s", exc)
+    return list(dict.fromkeys(configured))
+
+
+async def has_force_subscribe():
+    return bool(await get_force_subscribe_chats())
+
+
+async def _chat_join_url(bot, chat):
+    if getattr(chat, "username", None):
+        return f"https://t.me/{chat.username}"
+    if getattr(chat, "invite_link", None):
+        return chat.invite_link
+    try:
+        invite = await bot.create_chat_invite_link(chat.id)
+        return invite.invite_link
+    except Exception:
+        return None
+
+
 async def pub_is_subscribed(bot, query, channel):
+    """Return join buttons for destinations where the user is not a member."""
     btn = []
-    for id in channel:
-        chat = await bot.get_chat(int(id))
+    user_id = getattr(getattr(query, "from_user", None), "id", None)
+    if not user_id:
+        return btn
+    for chat_id in channel or []:
         try:
-            await bot.get_chat_member(id, query.from_user.id)
+            chat = await bot.get_chat(int(chat_id))
+            member = await bot.get_chat_member(chat.id, user_id)
+            status = getattr(member, "status", None)
+            is_member = status in (enums.ChatMemberStatus.OWNER,
+                                   enums.ChatMemberStatus.ADMINISTRATOR,
+                                   enums.ChatMemberStatus.MEMBER)
+            if status == enums.ChatMemberStatus.RESTRICTED:
+                is_member = bool(getattr(member, "is_member", False))
+            if is_member:
+                continue
         except UserNotParticipant:
-            btn.append(
-                [InlineKeyboardButton(f'Join {chat.title}', url=chat.invite_link)]
-            )
-        except Exception as e:
-            pass
+            try:
+                chat = await bot.get_chat(int(chat_id))
+            except Exception:
+                continue
+        except Exception as exc:
+            logger.warning("FSub membership check failed for %s: %s", chat_id, exc)
+            continue
+        link = await _chat_join_url(bot, chat)
+        if link:
+            title = (getattr(chat, "title", None) or str(chat_id)).strip()
+            btn.append([InlineKeyboardButton(f"Join {title[:45]}", url=link)])
     return btn
 
+
 async def is_subscribed(bot, query):
-    if REQUEST_TO_JOIN_MODE == True and join_db().isActive():
-        try:
-            user = await join_db().get_user(query.from_user.id)
-            if user and user["user_id"] == query.from_user.id:
-                return True
-            else:
-                try:
-                    user_data = await bot.get_chat_member(AUTH_CHANNEL, query.from_user.id)
-                except UserNotParticipant:
-                    pass
-                except Exception as e:
-                    logger.exception(e)
-                else:
-                    if user_data.status != enums.ChatMemberStatus.BANNED:
-                        return True
-        except Exception as e:
-            logger.exception(e)
-            return False
-    else:
-        try:
-            user = await bot.get_chat_member(AUTH_CHANNEL, query.from_user.id)
-        except UserNotParticipant:
-            pass
-        except Exception as e:
-            logger.exception(e)
-        else:
-            if user.status != enums.ChatMemberStatus.BANNED:
-                return True
+    """Require membership in every configured global FSub channel/group."""
+    channels = await get_force_subscribe_chats()
+    if not channels:
+        return True
+
+    user_id = getattr(getattr(query, "from_user", None), "id", None)
+    if not user_id:
         return False
+
+    # Preserve join-request mode for the legacy AUTH_CHANNEL, without allowing
+    # a request for that one destination to bypass any additional FSub chats.
+    request_approved = False
+    if REQUEST_TO_JOIN_MODE and join_db().isActive():
+        try:
+            request_user = await join_db().get_user(user_id)
+            request_approved = bool(request_user and request_user.get("user_id") == user_id)
+        except Exception:
+            logger.exception("Could not check force-subscribe join request")
+
+    from info import AUTH_CHANNEL
+    for chat_id in channels:
+        if request_approved and AUTH_CHANNEL and int(chat_id) == int(AUTH_CHANNEL):
+            continue
+        try:
+            member = await bot.get_chat_member(int(chat_id), user_id)
+            status = getattr(member, "status", None)
+            allowed = status in (enums.ChatMemberStatus.OWNER,
+                                 enums.ChatMemberStatus.ADMINISTRATOR,
+                                 enums.ChatMemberStatus.MEMBER)
+            if status == enums.ChatMemberStatus.RESTRICTED:
+                allowed = bool(getattr(member, "is_member", False))
+            if not allowed:
+                return False
+        except UserNotParticipant:
+            return False
+        except Exception as exc:
+            logger.warning("Global FSub check failed for %s: %s", chat_id, exc)
+            return False
+    return True
 
 async def get_poster(query, bulk=False, id=False, file=None):
     if imdb is None:

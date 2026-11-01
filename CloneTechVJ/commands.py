@@ -25,8 +25,8 @@ async def start(client, message):
         buttons = [[
             InlineKeyboardButton('⤬ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ⤬', url=f'http://t.me/{me.username}?startgroup=true')
         ]]
-        if cd["update_channel_link"] != None:
-            up = cd["update_channel_link"]
+        up = cd.get("update_channel_link") or CHNL_LNK
+        if up:
             buttons.append([InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)])
         reply_markup = InlineKeyboardMarkup(buttons)
         await message.reply(script.CLONE_START_TXT.format(message.from_user.mention if message.from_user else message.chat.title, me.username, me.first_name), reply_markup=reply_markup)
@@ -40,8 +40,8 @@ async def start(client, message):
             InlineKeyboardButton('🕵️ ʜᴇʟᴘ', callback_data='help'),
             InlineKeyboardButton('🔍 ᴀʙᴏᴜᴛ', callback_data='about')
         ]]
-        if cd["update_channel_link"] != None:
-            up = cd["update_channel_link"]
+        up = cd.get("update_channel_link") or CHNL_LNK
+        if up:
             buttons.append([InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)])
         reply_markup = InlineKeyboardMarkup(buttons)
         m=await message.reply_sticker("CAACAgUAAxkBAAEKVaxlCWGs1Ri6ti45xliLiUeweCnu4AACBAADwSQxMYnlHW4Ls8gQMAQ") 
@@ -109,8 +109,8 @@ async def start(client, message):
             f_caption=files1['caption']
             if f_caption is None:
                 f_caption = f"@TGBoxOffice {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files1['file_name'].split()))}"
-            if cd["update_channel_link"] != None:
-                up = cd["update_channel_link"]
+            up = cd.get("update_channel_link") or CHNL_LNK
+            if up:
                 button = [[
                     InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)
                 ]]
@@ -157,8 +157,8 @@ async def start(client, message):
     f_caption=files['caption']
     if f_caption is None:
         f_caption = f"@TGBoxOffice {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@'), files['file_name'].split()))}"
-    if cd["update_channel_link"] != None:
-        up = cd["update_channel_link"]
+    up = cd.get("update_channel_link") or CHNL_LNK
+    if up:
         button = [[
             InlineKeyboardButton('🍿 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🍿', url=up)
         ]]
