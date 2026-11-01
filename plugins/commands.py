@@ -2,7 +2,7 @@
 # Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
 # Ask Doubt on telegram @TGBoxOffice
 
-import os, string, logging, random, asyncio, time, datetime, re, sys, json, base64
+import os, string, logging, random, asyncio, time, datetime, re, sys, json, base64, html as html_lib
 from Script import script
 from pyrogram import Client, filters, enums
 from pyrogram.errors import ChatAdminRequired, FloodWait
@@ -21,6 +21,27 @@ logger = logging.getLogger(__name__)
 
 BATCH_FILES = {}
 join_db = JoinReqs
+
+
+def _safe_mention(user):
+    """Build an HTML mention manually with the display name escaped.
+
+    pyrogram's `User.mention` drops the first/last name into the <a> tag
+    unescaped. Some Telegram accounts have names containing raw '<', '>'
+    or '&' (fancy-text generators, emoji name art, etc.), which breaks
+    Telegram's HTML entity parser with errors like
+    "can't parse entities: Unexpected end of name token at byte offset N"
+    and crashes the handler. Escaping the name fixes that.
+    """
+    if not user:
+        return "there"
+    name = user.first_name or user.username or "there"
+    return f'<a href="tg://user?id={user.id}">{html_lib.escape(name)}</a>'
+
+
+def _safe_text(value):
+    """HTML-escape arbitrary user/chat-supplied text (titles, etc.)."""
+    return html_lib.escape(str(value)) if value is not None else ""
 
 def _start_buttons(client_username):
     """One consistent native Telegram button palette for every /start screen."""
@@ -46,28 +67,44 @@ def _start_buttons(client_username):
 
 async def _send_start_screen(client, message, *, group=False):
     """Send the shared start screen using Telegram's native coloured buttons."""
-    caption = script.START_TXT.format(
-        message.from_user.mention if message.from_user else message.chat.title,
-        temp.U_NAME,
-        temp.B_NAME,
-    )
+    who = _safe_mention(message.from_user) if message.from_user else _safe_text(message.chat.title)
+    caption = script.START_TXT.format(who, temp.U_NAME, temp.B_NAME)
     markup = make_inline_keyboard(_start_buttons(temp.U_NAME))
-    if group:
-        await api_request(client, "sendMessage", {
-            "chat_id": message.chat.id,
-            "text": caption,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True,
-            "reply_markup": markup,
-        })
-    else:
-        await api_request(client, "sendPhoto", {
-            "chat_id": message.chat.id,
-            "photo": "https://files.catbox.moe/mau8mb.jpg",
-            "caption": caption,
-            "parse_mode": "HTML",
-            "reply_markup": markup,
-        })
+    try:
+        if group:
+            await api_request(client, "sendMessage", {
+                "chat_id": message.chat.id,
+                "text": caption,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+                "reply_markup": markup,
+            })
+        else:
+            await api_request(client, "sendPhoto", {
+                "chat_id": message.chat.id,
+                "photo": "https://files.catbox.moe/mau8mb.jpg",
+                "caption": caption,
+                "parse_mode": "HTML",
+                "reply_markup": markup,
+            })
+    except Exception as e:
+        # Last-resort fallback so a bad name/title can never crash /start:
+        # drop parse_mode entirely and send plain text with no entities.
+        logger.exception("Start screen send failed, falling back to plain text: %s", e)
+        plain = re.sub(r"<[^>]+>", "", caption)
+        if group:
+            await api_request(client, "sendMessage", {
+                "chat_id": message.chat.id,
+                "text": plain,
+                "reply_markup": markup,
+            })
+        else:
+            await api_request(client, "sendPhoto", {
+                "chat_id": message.chat.id,
+                "photo": "https://files.catbox.moe/mau8mb.jpg",
+                "caption": plain,
+                "reply_markup": markup,
+            })
 
 
 @Client.on_message(filters.command("start") & filters.incoming)
@@ -90,7 +127,7 @@ async def start(client, message):
         return
     if not await db.is_user_exist(message.from_user.id):
         await db.add_user(message.from_user.id, message.from_user.first_name)
-        await client.send_message(LOG_CHANNEL, script.LOG_TEXT_P.format(message.from_user.id, message.from_user.mention))
+        await client.send_message(LOG_CHANNEL, script.LOG_TEXT_P.format(message.from_user.id, _safe_mention(message.from_user)))
 
     if await has_force_subscribe() and not await is_subscribed(client, message):
         try:
@@ -145,7 +182,7 @@ async def start(client, message):
         if vj and PREMIUM_AND_REFERAL_MODE == True:
             await message.reply(f"<b>You have joined using the referral link of user with ID {user_id}\n\nSend /start again to use the bot</b>")
             num_referrals = await get_referal_users_count(user_id)
-            await client.send_message(chat_id = user_id, text = "<b>{} start the bot with your referral link\n\nTotal Referals - {}</b>".format(message.from_user.mention, num_referrals))
+            await client.send_message(chat_id = user_id, text = "<b>{} start the bot with your referral link\n\nTotal Referals - {}</b>".format(_safe_mention(message.from_user), num_referrals))
             if num_referrals == REFERAL_COUNT:
                 time = REFERAL_PREMEIUM_TIME       
                 seconds = await get_seconds(time)
