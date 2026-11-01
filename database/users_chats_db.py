@@ -381,5 +381,20 @@ class Database:
         return user.get('save', False) 
     
 
+
+    async def get_link_feature(self, feature):
+        """Return persistent global stream/download switch (enabled by default)."""
+        doc = await self.config.find_one({"_id": "link_features"}) or {}
+        return bool(doc.get(feature, True))
+
+    async def set_link_feature(self, feature, enabled):
+        await self.config.update_one(
+            {"_id": "link_features"},
+            {"$set": {feature: bool(enabled)}},
+            upsert=True,
+        )
+        return bool(enabled)
+
+
 db = Database(USER_DB_URI, DATABASE_NAME)
 

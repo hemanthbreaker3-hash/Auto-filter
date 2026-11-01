@@ -43,6 +43,12 @@ def _keyboard(page="home"):
              InlineKeyboardButton("📋 Refresh list", callback_data=f"{PREFIX}:mongo")],
             [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home")],
         ])
+    elif page == "links":
+        rows = [
+            [InlineKeyboardButton("⏯ Toggle Stream", callback_data=f"{PREFIX}:link_toggle_stream")],
+            [InlineKeyboardButton("⏯ Toggle Download", callback_data=f"{PREFIX}:link_toggle_download")],
+            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home"), InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:links")],
+        ]
     elif page == "admins":
         rows = [
             [InlineKeyboardButton("➕ Add admin", callback_data=f"{PREFIX}:help_add"),
@@ -59,6 +65,7 @@ def _keyboard(page="home"):
              InlineKeyboardButton("💾 Backup help", callback_data=f"{PREFIX}:backup")],
             [InlineKeyboardButton("🔒 Force Subscribe", callback_data=f"{PREFIX}:fsub")],
             [InlineKeyboardButton("🗄 MongoDB Manager", callback_data=f"{PREFIX}:mongo")],
+            [InlineKeyboardButton("🔗 Stream / Download", callback_data=f"{PREFIX}:links")],
             [InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:refresh")],
         ]
     return InlineKeyboardMarkup(rows)
@@ -85,6 +92,12 @@ def _button_rows(page="home"):
             [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home"}],
         ])
         return rows
+    if page == "links":
+        return [
+            [{"text": "⏯ Toggle Stream", "callback_data": f"{PREFIX}:link_toggle_stream", "style": "primary"}],
+            [{"text": "⏯ Toggle Download", "callback_data": f"{PREFIX}:link_toggle_download", "style": "primary"}],
+            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home"}, {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:links"}],
+        ]
     if page == "admins":
         return [
             [{"text": "➕ Add admin", "callback_data": f"{PREFIX}:help_add", "style": "success"},
@@ -100,6 +113,7 @@ def _button_rows(page="home"):
          {"text": "💾 Backup help", "callback_data": f"{PREFIX}:backup"}],
         [{"text": "🔒 Force Subscribe", "callback_data": f"{PREFIX}:fsub", "style": "primary"}],
         [{"text": "🗄 MongoDB Manager", "callback_data": f"{PREFIX}:mongo", "style": "primary"}],
+        [{"text": "🔗 Stream / Download", "callback_data": f"{PREFIX}:links", "style": "primary"}],
         [{"text": "🔄 Refresh", "callback_data": f"{PREFIX}:refresh"}],
     ]
 
@@ -215,6 +229,15 @@ async def _panel_text(page="home", client=None, page_number=1):
                 "<code>/panel mongo enable ID</code> / <code>/panel mongo disable ID</code>\n"
                 "<code>/panel mongo remove ID</code>\n\n"
                 "<i>New indexed files are balanced across enabled nodes; search, delete, backup and restore include all registered nodes.</i>")
+    if page == "links":
+        stream = await db.get_link_feature("stream_enabled")
+        download = await db.get_link_feature("download_enabled")
+        return (f"<b>🔗 {BRAND} • LINK CONTROLS</b>\n\n"
+                f"Stream links: <b>{'🟢 ENABLED' if stream else '🔴 DISABLED'}</b>\n"
+                f"Download links: <b>{'🟢 ENABLED' if download else '🔴 DISABLED'}</b>\n\n"
+                "Use the buttons below to toggle each feature, or run\n"
+                "<code>/panel stream on|off</code>\n<code>/panel download on|off</code>\n\n"
+                "<i>Disabled links cannot be generated.</i>")
     if page == "channels":
         lines = "\n".join(f"• <code>{escape(str(cid))}</code>" for cid in channels) or "• No file channels configured"
         return (f"<b>📡 {BRAND} • CHANNELS</b>\n\n<b>File-index channels ({len(channels)})</b>\n{lines}\n\n"
@@ -300,6 +323,12 @@ async def panel(client, message):
             return await message.reply_text(f"<b>✅ Force Subscribe destination added.</b>\n{escape(chat.title)}\n<code>{chat_id}</code>")
         await db.remove_force_subscribe_chat(chat_id)
         return await message.reply_text(f"<b>✅ Removed from panel-managed FSub:</b>\n{escape(chat.title)}\n<code>{chat_id}</code>")
+    if args and args[0].lower() in {"stream", "download"}:
+        if len(args) != 2 or args[1].lower() not in {"on", "off"}:
+            return await message.reply_text(f"Usage: <code>/panel {args[0].lower()} on</code> or <code>/panel {args[0].lower()} off</code>")
+        feature = "stream_enabled" if args[0].lower() == "stream" else "download_enabled"
+        await db.set_link_feature(feature, args[1].lower() == "on")
+        return await message.reply_text(f"<b>✅ {args[0].title()} links {'ENABLED' if args[1].lower() == 'on' else 'DISABLED'}.</b>")
     if args and args[0].lower() == "mongo":
         if len(args) < 2:
             return await message.reply_text("<code>/panel mongo add MONGODB_URI</code>\n<code>/panel mongo list</code>\n<code>/panel mongo stats</code>\n<code>/panel mongo enable ID</code>\n<code>/panel mongo disable ID</code>\n<code>/panel mongo remove ID</code>")
@@ -375,6 +404,12 @@ async def panel_callbacks(client, query):
     if action == "mongo_help_add":
         await query.answer("Send /panel mongo add mongodb+srv://USER:PASS@HOST/DB in this private chat", show_alert=True)
         return
+    if action in {"link_toggle_stream", "link_toggle_download"}:
+        feature = "stream_enabled" if action.endswith("stream") else "download_enabled"
+        current = await db.get_link_feature(feature)
+        await db.set_link_feature(feature, not current)
+        await _edit_panel(client, query, await _panel_text("links", client), "links")
+        return await query.answer(f"{'Enabled' if not current else 'Disabled'} successfully.")
     if action.startswith("mongo_enable_") or action.startswith("mongo_disable_"):
         mode, node_id = action.split("_", 2)[1:]
         changed = await __import__('asyncio').to_thread(set_node_enabled, node_id, mode == "enable")
@@ -383,7 +418,7 @@ async def panel_callbacks(client, query):
         await _edit_panel(client, query, await _panel_text("mongo", client), "mongo")
         return await query.answer("MongoDB node enabled." if mode == "enable" else "MongoDB node disabled.")
     page = {"refresh": "home"}.get(action, action)
-    if page not in {"home", "admins", "channels", "fsub", "stats", "backup", "mongo"}:
+    if page not in {"home", "admins", "channels", "fsub", "stats", "backup", "mongo", "links"}:
         return await query.answer("Unknown panel section.", show_alert=True)
     await _edit_panel(client, query, await _panel_text(page, client), page)
     await query.answer("Updated")

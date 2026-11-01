@@ -1793,16 +1793,19 @@ async def cb_handler(client: Client, query: CallbackQuery):
     elif query.data.startswith("generate_stream_link"):
         _, file_id = query.data.split(":")
         try:
+            stream_enabled = await db.get_link_feature("stream_enabled")
+            download_enabled = await db.get_link_feature("download_enabled")
+            if not stream_enabled and not download_enabled:
+                return await query.answer("⚠️ Stream and download links are currently disabled by the admin.", show_alert=True)
             log_msg = await client.send_cached_media(chat_id=LOG_CHANNEL, file_id=file_id)
-            fileName = {quote_plus(get_name(log_msg))}
             stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
             download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-            button = [[
-                InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download),
-                InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream)
-            ],[
-                InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))
-            ]]
+            button = []
+            if download_enabled:
+                button.append([InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download)])
+            if stream_enabled:
+                button.append([InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream),
+                               InlineKeyboardButton("• ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))])
             await query.message.edit_reply_markup(InlineKeyboardMarkup(button))
         except Exception as e:
             print(e)
