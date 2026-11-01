@@ -7,6 +7,7 @@ import requests
 import asyncio
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
+from TechVJ.util.telegram_rich import ButtonStyle
 
 def upload_image_requests(image_path):
     upload_url = "https://envs.sh"
@@ -43,10 +44,10 @@ async def telegraph_upload(bot, update):
         text=f"<b>Link :-</b>\n\n<code>{image_url}</code>",
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup( [[
-            InlineKeyboardButton(text="Open Link", url=image_url),
-            InlineKeyboardButton(text="Share Link", url=f"https://telegram.me/share/url?url={image_url}")
+            InlineKeyboardButton(text="Open Link", url=image_url, style=ButtonStyle.PRIMARY),
+            InlineKeyboardButton(text="Share Link", url=f"https://telegram.me/share/url?url={image_url}", style=ButtonStyle.PRIMARY)
             ],[
-            InlineKeyboardButton(text="✗ Close ✗", callback_data="close")
+            InlineKeyboardButton(text="✗ Close ✗", callback_data="close", style=ButtonStyle.DANGER)
             ]])
         )
     

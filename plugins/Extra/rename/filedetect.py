@@ -5,6 +5,7 @@
 from pyrogram import Client, filters
 from pyrogram.enums import MessageMediaType
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
+from TechVJ.util.telegram_rich import ButtonStyle
 
 async def refunc(client, message, new_name, msg):
     try:
@@ -24,14 +25,14 @@ async def refunc(client, message, new_name, msg):
                 new_name = new_name.replace(".", "")  
             if mime == "video":
                 markup = InlineKeyboardMarkup([[
-                    InlineKeyboardButton("📁 Document", callback_data="upload_document"),
-                    InlineKeyboardButton("🎥 Video", callback_data="upload_video")]])
+                    InlineKeyboardButton("📁 Document", callback_data="upload_document", style=ButtonStyle.DANGER),
+                    InlineKeyboardButton("🎥 Video", callback_data="upload_video", style=ButtonStyle.DANGER)]])
             elif mime == "audio":
                 markup = InlineKeyboardMarkup([[InlineKeyboardButton(
-                    "📁 Document", callback_data="upload_document"), InlineKeyboardButton("🎵 audio", callback_data="upload_audio")]])
+                    "📁 Document", callback_data="upload_document", style=ButtonStyle.DANGER), InlineKeyboardButton("🎵 audio", callback_data="upload_audio", style=ButtonStyle.DANGER)]])
             else:
                 markup = InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("📁 Document", callback_data="upload_document")]])
+                    [[InlineKeyboardButton("📁 Document", callback_data="upload_document", style=ButtonStyle.DANGER)]])
             await message.reply_text(f"**Select the output file type**\n**🎞New Name** :- ```{out_filename}```", reply_to_message_id=msg.id, reply_markup=markup)
 
         except:
@@ -44,13 +45,13 @@ async def refunc(client, message, new_name, msg):
                 return
             if mime == "video":
                 markup = InlineKeyboardMarkup([[InlineKeyboardButton(
-                    "📁 Document", callback_data="upload_document"), InlineKeyboardButton("🎥 Video", callback_data="upload_video")]])
+                    "📁 Document", callback_data="upload_document", style=ButtonStyle.DANGER), InlineKeyboardButton("🎥 Video", callback_data="upload_video", style=ButtonStyle.DANGER)]])
             elif mime == "audio":
                 markup = InlineKeyboardMarkup([[InlineKeyboardButton(
-                    "📁 Document", callback_data="upload_document"), InlineKeyboardButton("🎵 audio", callback_data="upload_audio")]])
+                    "📁 Document", callback_data="upload_document", style=ButtonStyle.DANGER), InlineKeyboardButton("🎵 audio", callback_data="upload_audio", style=ButtonStyle.DANGER)]])
             else:
                 markup = InlineKeyboardMarkup(
-                    [[InlineKeyboardButton("📁 Document", callback_data="upload_document")]])
+                    [[InlineKeyboardButton("📁 Document", callback_data="upload_document", style=ButtonStyle.DANGER)]])
             await message.reply_text(f"**Select the output file type**\n**🎞New Name ->** :- {out_filename}", reply_to_message_id=msg.id, reply_markup=markup)
     except Exception as e:
         print(f"error: {e}")

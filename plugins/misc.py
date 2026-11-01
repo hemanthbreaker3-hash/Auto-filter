@@ -9,6 +9,7 @@ from info import IMDB_TEMPLATE
 from utils import extract_user, get_file_id, get_poster, last_online 
 from datetime import datetime
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from TechVJ.util.telegram_rich import ButtonStyle
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
@@ -104,7 +105,7 @@ async def who_is(client, message):
             message=chat_photo.big_file_id
         )
         buttons = [[
-            InlineKeyboardButton('🔐 Close', callback_data='close_data')
+            InlineKeyboardButton('🔐 Close', callback_data='close_data', style=ButtonStyle.DANGER)
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await message.reply_photo(
@@ -118,7 +119,7 @@ async def who_is(client, message):
         os.remove(local_user_photo)
     else:
         buttons = [[
-            InlineKeyboardButton('🔐 Close', callback_data='close_data')
+            InlineKeyboardButton('🔐 Close', callback_data='close_data', style=ButtonStyle.DANGER)
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await message.reply_text(
@@ -142,8 +143,7 @@ async def imdb_search(client, message):
             [
                 InlineKeyboardButton(
                     text=f"{movie.get('title')} - {movie.get('year')}",
-                    callback_data=f"imdb#{movie.movieID}",
-                )
+                    callback_data=f"imdb#{movie.movieID}", style=ButtonStyle.DANGER)
             ]
             for movie in movies
         ]
@@ -159,8 +159,7 @@ async def imdb_callback(bot: Client, quer_y: CallbackQuery):
             [
                 InlineKeyboardButton(
                     text=f"{imdb.get('title')}",
-                    url=imdb['url'],
-                )
+                    url=imdb['url'], style=ButtonStyle.PRIMARY)
             ]
         ]
     message = quer_y.message.reply_to_message or quer_y.message

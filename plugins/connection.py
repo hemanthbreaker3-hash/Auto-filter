@@ -6,6 +6,7 @@ import logging
 from info import ADMINS
 from pyrogram import filters, Client, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from TechVJ.util.telegram_rich import ButtonStyle
 from database.connections_mdb import add_connection, all_connections, if_active, delete_connection
 
 logger = logging.getLogger(__name__)
@@ -129,8 +130,7 @@ async def connections(client, message):
             buttons.append(
                 [
                     InlineKeyboardButton(
-                        text=f"{title}{act}", callback_data=f"groupcb:{groupid}:{act}"
-                    )
+                        text=f"{title}{act}", callback_data=f"groupcb:{groupid}:{act}", style=ButtonStyle.DANGER)
                 ]
             )
         except:

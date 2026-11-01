@@ -20,6 +20,11 @@ sec_client = MongoClient(SEC_FILE_DB_URI)
 sec_db = sec_client[DATABASE_NAME]
 sec_col = sec_db[COLLECTION_NAME]
 
+_GENERIC_NAME_RE = re.compile(
+    r"^(?:video|audio|document|media|file|mp4|mkv|avi|mov|flv|webm|mp3|aac|flac|wav|ogg|m4a|\d+|\s)+$",
+    re.IGNORECASE,
+)
+
 
 def _extract_caption_text(caption_obj):
     """Preserve the original plain caption text without modifying it."""
@@ -33,13 +38,19 @@ def _make_file_document(media):
     file_id = unpack_new_file_id(media.file_id)
     raw_caption = _extract_caption_text(getattr(media, 'caption', None))
     raw_file_name = getattr(media, 'file_name', None)
-    if not raw_file_name:
-        if raw_caption:
-            first_line = next((line.strip() for line in raw_caption.splitlines() if line.strip()), "")
-            raw_file_name = first_line[:120] if first_line else f"media_{file_id[:12]}"
-        else:
-            raw_file_name = f"media_{file_id[:12]}"
-    file_name = clean_file_name(raw_file_name) or f"media_{file_id[:12]}"
+
+    cleaned_file_name = clean_file_name(raw_file_name) if raw_file_name else ""
+    cleaned_caption_name = ""
+    if raw_caption:
+        first_line = next((line.strip() for line in raw_caption.splitlines() if line.strip()), "")
+        if first_line:
+            cleaned_caption_name = clean_file_name(first_line[:200])
+
+    if not cleaned_file_name or _GENERIC_NAME_RE.match(cleaned_file_name):
+        file_name = cleaned_caption_name or cleaned_file_name or f"media {file_id[:12]}"
+    else:
+        file_name = cleaned_file_name
+
     return {
         'file_id': file_id,
         'file_name': f"@TGBoxOffice {file_name}",
@@ -91,20 +102,24 @@ def _save_documents_sync(documents):
         try:
             existing_ids.update(row['file_id'] for row in collection.find(
                 {'file_id': {'$in': file_ids}}, {'file_id': 1}))
-            existing_name_sizes.update((row.get('file_name'), row.get('file_size')) for row in collection.find(
-                {'file_name': {'$in': file_names}}, {'file_name': 1, 'file_size': 1}))
+            existing_name_sizes.update(
+                (row.get('file_name'), row.get('file_size'))
+                for row in collection.find({'file_name': {'$in': file_names}}, {'file_name': 1, 'file_size': 1})
+                if row.get('file_size')
+            )
         except Exception as exc:
             print(f"[MongoDB] Skipping unreachable node during duplicate check: {exc}")
     unique, seen_ids, seen_name_sizes = [], set(), set()
     duplicates = 0
     for item in documents:
         fid, fname, fsize = item['file_id'], item['file_name'], item.get('file_size')
-        name_size = (fname, fsize)
-        if fid in existing_ids or name_size in existing_name_sizes or fid in seen_ids or name_size in seen_name_sizes:
+        name_size = (fname, fsize) if fsize else None
+        if fid in existing_ids or fid in seen_ids or (name_size and (name_size in existing_name_sizes or name_size in seen_name_sizes)):
             duplicates += 1
             continue
         seen_ids.add(fid)
-        seen_name_sizes.add(name_size)
+        if name_size:
+            seen_name_sizes.add(name_size)
         unique.append(item)
     if not unique:
         return 0, duplicates, 0
@@ -129,8 +144,6 @@ def _save_documents_sync(documents):
                 saved += max(0, len(batch) - len(failed_indices))
                 failures += len(failed_indices)
             else:
-                # A node may be temporarily unreachable; retry this batch on
-                # other enabled stores rather than losing the index operation.
                 remaining = batch
                 for fallback_index in range(len(collections)):
                     if fallback_index == target_index or not remaining:
@@ -215,25 +228,38 @@ async def save_file(media):
         return False, 0
     return False, 2 if errors else 0
 
+
 def clean_file_name(file_name):
-    """Clean and format the file name."""
-    file_name = re.sub(r"(_|\-|\.|\+)", " ", str(file_name)) 
-    unwanted_chars = ['[', ']', '(', ')', '{', '}']
-    
-    for char in unwanted_chars:
-        file_name = file_name.replace(char, '')
-        
-    old_file_name = ' '.join(filter(lambda x: not x.startswith('@') and not x.startswith('http') and not x.startswith('www.') and not x.startswith('t.me'), file_name.split()))
+    """Clean and format the file name while ignoring underscores and special separators."""
+    if not file_name:
+        return ""
+    raw = str(file_name)
+    # Remove URLs and explicit @channel prefixes that are separate tokens before underscore splitting
+    raw = re.sub(r"https?://\S+|www\.\S+|t\.me/\S+", " ", raw)
+    # Replace all underscores (including Unicode fullwidth underscores), hyphens, dots, pluses with spaces
+    cleaned = re.sub(r"[_\-\.\+＿]+", " ", raw)
+    for char in ('[', ']', '(', ')', '{', '}'):
+        cleaned = cleaned.replace(char, ' ')
+    tokens = cleaned.split()
+    filtered_tokens = [
+        x for x in tokens
+        if not x.startswith('@') and not x.startswith('http') and not x.startswith('www.') and not x.startswith('t.me')
+    ]
+    if not filtered_tokens and tokens:
+        # If every token started with '@', strip only the leading '@' so the title is preserved
+        filtered_tokens = [x.lstrip('@') for x in tokens if x.lstrip('@')]
+    old_file_name = ' '.join(filtered_tokens)
     new_file_name = add_space_between_e_and_number(old_file_name)
-    return new_file_name
+    return re.sub(r"\s+", " ", new_file_name).strip()
+
 
 def add_space_between_e_and_number(input_string):
-    # Use regex to find 'e' or 'E' followed by a digit and add a space
     output_string = re.sub(r'(e|E)([0-9])', r'\1 \2', input_string)
     return output_string
-    
+
+
 def is_file_already_saved(file_id, file_name):
-    """Check if the file is already saved in either collection."""
+    """Check if the file is already saved in any collection."""
     found1 = {'file_name': file_name}
     found = {'file_id': file_id}
 
@@ -241,65 +267,85 @@ def is_file_already_saved(file_id, file_name):
         if collection.find_one(found1) or collection.find_one(found):
             print(f"{file_name} is already saved.")
             return True
-            
+
     return False
 
-async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
-    """Search all active file databases and paginate the merged results."""
-    query = query.strip()
-    if not query:
-        raw_pattern = '.'
-    elif ' ' not in query:
-        raw_pattern = r'(\b|[\.\+\-_])' + query + r'(\b|[\.\+\-_])'
+
+def _build_search_regex(query: str, relax_year: bool = False):
+    """Build a regex that matches across spaces, underscores, dots, hyphens, and pluses."""
+    normalized = re.sub(r"[_\-\.\+:＿]+", " ", str(query or "")).strip()
+    normalized = re.sub(r"\s+", " ", normalized)
+    if not normalized:
+        return re.compile(r".", flags=re.IGNORECASE)
+    words = normalized.split(" ")
+    escaped_words = []
+    for w in words:
+        if relax_year and re.fullmatch(r"(?:19|20)\d{2}", w):
+            # Allow matching 3-digit truncated years such as 202 for 2020
+            escaped_words.append(re.escape(w[:3]) + r"\d?")
+        else:
+            escaped_words.append(re.escape(w))
+    if len(escaped_words) == 1:
+        raw_pattern = r"(?:\b|[\.\+\-_])" + escaped_words[0]
     else:
-        raw_pattern = query.replace(' ', r'.*[\s\.\+\-_]')
-    try:
-        regex = re.compile(raw_pattern, flags=re.IGNORECASE)
-    except Exception:
-        regex = query
-    criteria = {'file_name': regex}
-    if USE_CAPTION_FILTER:
-        criteria = {'$or': [criteria, {'caption': regex}]}
-    collections = _unique_collections()
+        raw_pattern = r".*[\s\.\+\-_]+".join(escaped_words)
+    return re.compile(raw_pattern, flags=re.IGNORECASE)
+
+
+def _execute_search_collections(collections, criteria, fetch_limit=None):
     total_results = 0
     files = []
-    fetch_limit = offset + max_results
     for collection in collections:
         try:
             total_results += collection.count_documents(criteria)
-            files.extend(list(collection.find(criteria).sort('$natural', -1).limit(fetch_limit)))
+            cursor = collection.find(criteria).sort('$natural', -1)
+            if fetch_limit is not None:
+                cursor = cursor.limit(fetch_limit)
+            files.extend(list(cursor))
         except Exception as exc:
             print(f"[MongoDB] Search skipped an unreachable node: {exc}")
+    return files, total_results
+
+
+async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
+    """Search all active file databases ignoring underscores and paginate the merged results."""
+    query = str(query or "").strip()
+    try:
+        regex = _build_search_regex(query, relax_year=False)
+    except Exception:
+        regex = re.compile(re.escape(query), flags=re.IGNORECASE)
+
+    criteria = {'$or': [{'file_name': regex}, {'caption': regex}]} if USE_CAPTION_FILTER else {'file_name': regex}
+    collections = _unique_collections()
+    fetch_limit = offset + max_results
+    files, total_results = _execute_search_collections(collections, criteria, fetch_limit=fetch_limit)
+
+    # Fallback: if a 4-digit year in the query missed a truncated 3-digit year in the filename (e.g. Welcome_to_Sudden_Death_202)
+    if total_results == 0 and re.search(r"\b(?:19|20)\d{2}\b", re.sub(r"[_\-\.\+]+", " ", query)):
+        try:
+            relaxed_regex = _build_search_regex(query, relax_year=True)
+            relaxed_criteria = {'$or': [{'file_name': relaxed_regex}, {'caption': relaxed_regex}]} if USE_CAPTION_FILTER else {'file_name': relaxed_regex}
+            files, total_results = _execute_search_collections(collections, relaxed_criteria, fetch_limit=fetch_limit)
+        except Exception:
+            pass
+
     files.sort(key=lambda item: item.get('_id'), reverse=True)
     page = files[offset:offset + max_results]
     next_offset = '' if offset + max_results >= total_results else offset + max_results
     return page, next_offset, total_results
 
+
 async def get_bad_files(query, file_type=None, use_filter=False):
-    query = query.strip()
-    if not query:
-        raw_pattern = '.'
-    elif ' ' not in query:
-        raw_pattern = rf'(\b|[.+-_]){query}(\b|[.+-_])'
-    else:
-        raw_pattern = query.replace(' ', r'.*[\s.+-_]')
+    query = str(query or "").strip()
     try:
-        regex = re.compile(raw_pattern, flags=re.IGNORECASE)
+        regex = _build_search_regex(query, relax_year=False)
     except re.error:
         return [], 0
-    filter_criteria = {'file_name': regex}
-    if USE_CAPTION_FILTER:
-        filter_criteria = {'$or': [filter_criteria, {'caption': regex}]}
+    filter_criteria = {'$or': [{'file_name': regex}, {'caption': regex}]} if USE_CAPTION_FILTER else {'file_name': regex}
     collections = _unique_collections()
-    total_results = 0
-    files = []
-    for collection in collections:
-        try:
-            total_results += collection.count_documents(filter_criteria)
-            files.extend(list(collection.find(filter_criteria)))
-        except Exception as exc:
-            print(f"[MongoDB] Bad-file search skipped an unreachable node: {exc}")
+    files, total_results = _execute_search_collections(collections, filter_criteria, fetch_limit=None)
     return files, total_results
+
 
 async def get_file_details(query):
     for collection in _unique_collections():
@@ -310,6 +356,7 @@ async def get_file_details(query):
         except Exception as exc:
             print(f"[MongoDB] File lookup skipped an unreachable node: {exc}")
     return None
+
 
 def encode_file_id(s: bytes) -> str:
     r = b""
@@ -323,7 +370,8 @@ def encode_file_id(s: bytes) -> str:
                 n = 0
             r += bytes([i])
     return base64.urlsafe_b64encode(r).decode().rstrip("=")
-    
+
+
 def unpack_new_file_id(new_file_id):
     """Return file_id"""
     decoded = FileId.decode(new_file_id)

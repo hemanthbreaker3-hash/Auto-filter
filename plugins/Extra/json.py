@@ -5,12 +5,13 @@
 import os
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
+from TechVJ.util.telegram_rich import ButtonStyle
 
 @Client.on_message(filters.command(["json", 'js']))
 async def jsonify(_, message):
     the_real_message = None
     reply_to_id = None
-    pk = InlineKeyboardMarkup([[InlineKeyboardButton(text="𝙲𝙻𝙾𝚂𝙴", callback_data="close_data")]])  
+    pk = InlineKeyboardMarkup([[InlineKeyboardButton(text="𝙲𝙻𝙾𝚂𝙴", callback_data="close_data", style=ButtonStyle.DANGER)]])  
                 
     if message.reply_to_message:
         the_real_message = message.reply_to_message

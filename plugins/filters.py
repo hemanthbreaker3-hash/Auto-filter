@@ -5,6 +5,7 @@
 import io
 from pyrogram import filters, Client, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from TechVJ.util.telegram_rich import ButtonStyle
 from database.filters_mdb import(
    add_filter,
    get_filters,
@@ -271,8 +272,8 @@ async def delallconfirm(client, message):
         await message.reply_text(
             f"This will delete all filters from '{title}'.\nDo you want to continue??",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton(text="YES",callback_data="delallconfirm")],
-                [InlineKeyboardButton(text="CANCEL",callback_data="delallcancel")]
+                [InlineKeyboardButton(text="YES",callback_data="delallconfirm", style=ButtonStyle.DANGER)],
+                [InlineKeyboardButton(text="CANCEL",callback_data="delallcancel", style=ButtonStyle.DANGER)]
             ]),
             quote=True
         )

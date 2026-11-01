@@ -6,6 +6,7 @@ import logging, asyncio, os, re, random, pytz, aiohttp, requests, string, json, 
 from info import *
 from imdb import Cinemagoer 
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from TechVJ.util.telegram_rich import ButtonStyle
 from pyrogram import enums
 from pyrogram.errors import *
 from typing import Union
@@ -96,7 +97,7 @@ async def get_file_stream_markup(file_id: str):
         label = "• sᴛʀᴇᴀᴍ •"
     else:
         label = "• ᴅᴏᴡɴʟᴏᴀᴅ •"
-    return InlineKeyboardMarkup([[InlineKeyboardButton(label, callback_data=f"generate_stream_link:{file_id}")]])
+    return InlineKeyboardMarkup([[InlineKeyboardButton(label, callback_data=f"generate_stream_link:{file_id}", style=ButtonStyle.DANGER)]])
 
 
 async def get_force_subscribe_chats():
@@ -158,7 +159,7 @@ async def pub_is_subscribed(bot, query, channel):
         link = await _chat_join_url(bot, chat)
         if link:
             title = (getattr(chat, "title", None) or str(chat_id)).strip()
-            btn.append([InlineKeyboardButton(f"Join {title[:45]}", url=link)])
+            btn.append([InlineKeyboardButton(f"Join {title[:45]}", url=link, style=ButtonStyle.SUCCESS)])
     return btn
 
 
@@ -485,25 +486,21 @@ def gfilterparser(text, keyword):
                 if bool(match.group(5)) and buttons:
                     buttons[-1].append(InlineKeyboardButton(
                         text=match.group(2),
-                        callback_data=f"gfilteralert:{i}:{keyword}"
-                    ))
+                        callback_data=f"gfilteralert:{i}:{keyword}", style=ButtonStyle.DANGER))
                 else:
                     buttons.append([InlineKeyboardButton(
                         text=match.group(2),
-                        callback_data=f"gfilteralert:{i}:{keyword}"
-                    )])
+                        callback_data=f"gfilteralert:{i}:{keyword}", style=ButtonStyle.DANGER)])
                 i += 1
                 alerts.append(match.group(4))
             elif bool(match.group(5)) and buttons:
                 buttons[-1].append(InlineKeyboardButton(
                     text=match.group(2),
-                    url=match.group(4).replace(" ", "")
-                ))
+                    url=match.group(4).replace(" ", ""), style=ButtonStyle.PRIMARY))
             else:
                 buttons.append([InlineKeyboardButton(
                     text=match.group(2),
-                    url=match.group(4).replace(" ", "")
-                )])
+                    url=match.group(4).replace(" ", ""), style=ButtonStyle.PRIMARY)])
 
         else:
             note_data += text[prev:to_check]
@@ -541,25 +538,21 @@ def parser(text, keyword):
                 if bool(match.group(5)) and buttons:
                     buttons[-1].append(InlineKeyboardButton(
                         text=match.group(2),
-                        callback_data=f"alertmessage:{i}:{keyword}"
-                    ))
+                        callback_data=f"alertmessage:{i}:{keyword}", style=ButtonStyle.DANGER))
                 else:
                     buttons.append([InlineKeyboardButton(
                         text=match.group(2),
-                        callback_data=f"alertmessage:{i}:{keyword}"
-                    )])
+                        callback_data=f"alertmessage:{i}:{keyword}", style=ButtonStyle.DANGER)])
                 i += 1
                 alerts.append(match.group(4))
             elif bool(match.group(5)) and buttons:
                 buttons[-1].append(InlineKeyboardButton(
                     text=match.group(2),
-                    url=match.group(4).replace(" ", "")
-                ))
+                    url=match.group(4).replace(" ", ""), style=ButtonStyle.PRIMARY))
             else:
                 buttons.append([InlineKeyboardButton(
                     text=match.group(2),
-                    url=match.group(4).replace(" ", "")
-                )])
+                    url=match.group(4).replace(" ", ""), style=ButtonStyle.PRIMARY)])
 
         else:
             note_data += text[prev:to_check]
@@ -731,7 +724,7 @@ async def send_all(bot, userid, files, ident, chat_id, user_name, query):
                 title = file["file_name"]
                 size = get_size(file["file_size"])
                 if not await db.has_premium_access(userid) and SHORTLINK_MODE == True:
-                    await bot.send_message(chat_id=userid, text=f"<b>Hᴇʏ ᴛʜᴇʀᴇ {user_name} 👋🏽 \n\n✅ Sᴇᴄᴜʀᴇ ʟɪɴᴋ ᴛᴏ ʏᴏᴜʀ ғɪʟᴇ ʜᴀs sᴜᴄᴄᴇssғᴜʟʟʏ ʙᴇᴇɴ ɢᴇɴᴇʀᴀᴛᴇᴅ ᴘʟᴇᴀsᴇ ᴄʟɪᴄᴋ ᴅᴏᴡɴʟᴏᴀᴅ ʙᴜᴛᴛᴏɴ\n\n🗃️ Fɪʟᴇ Nᴀᴍᴇ : {title}\n🔖 Fɪʟᴇ Sɪᴢᴇ : {size}</b>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📤 Dᴏᴡɴʟᴏᴀᴅ 📥", url=await get_shortlink(chat_id, f"https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}"))]]))
+                    await bot.send_message(chat_id=userid, text=f"<b>Hᴇʏ ᴛʜᴇʀᴇ {user_name} 👋🏽 \n\n✅ Sᴇᴄᴜʀᴇ ʟɪɴᴋ ᴛᴏ ʏᴏᴜʀ ғɪʟᴇ ʜᴀs sᴜᴄᴄᴇssғᴜʟʟʏ ʙᴇᴇɴ ɢᴇɴᴇʀᴀᴛᴇᴅ ᴘʟᴇᴀsᴇ ᴄʟɪᴄᴋ ᴅᴏᴡɴʟᴏᴀᴅ ʙᴜᴛᴛᴏɴ\n\n🗃️ Fɪʟᴇ Nᴀᴍᴇ : {title}\n🔖 Fɪʟᴇ Sɪᴢᴇ : {size}</b>", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📤 Dᴏᴡɴʟᴏᴀᴅ 📥", url=await get_shortlink(chat_id, f"https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}"), style=ButtonStyle.SUCCESS)]]))
         else:
             for file in files:
                 f_caption = format_file_caption(file.get("caption"), file.get("file_name"), CHNL_LNK)
@@ -758,7 +751,7 @@ async def get_cap(settings, remaining_seconds, files, query, total_results, sear
             cap = IMDB_CAP
             cap+="<b>\n\n<u>🍿 Your Movie Files 👇</u></b>\n\n"
             for file in files:
-                cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n\n</a></b>"
+                cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), re.sub(r'_+', ' ', file['file_name']).split()))}\n\n</a></b>"
         else:
             imdb = await get_poster(search, file=(files[0])["file_name"]) if settings["imdb"] else None
             if imdb:
@@ -796,17 +789,17 @@ async def get_cap(settings, remaining_seconds, files, query, total_results, sear
                 )
                 cap+="<b>\n\n<u>🍿 Your Movie Files 👇</u></b>\n\n"
                 for file in files:
-                    cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n\n</a></b>"
+                    cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), re.sub(r'_+', ' ', file['file_name']).split()))}\n\n</a></b>"
             else:
                 cap = f"<b>Tʜᴇ Rᴇꜱᴜʟᴛꜱ Fᴏʀ ☞ {search}\n\nRᴇǫᴜᴇsᴛᴇᴅ Bʏ ☞ {query.from_user.mention}\n\nʀᴇsᴜʟᴛ sʜᴏᴡ ɪɴ ☞ {remaining_seconds} sᴇᴄᴏɴᴅs\n\nᴘᴏᴡᴇʀᴇᴅ ʙʏ ☞ : {query.message.chat.title}\n\n⚠️ ᴀꜰᴛᴇʀ 5 ᴍɪɴᴜᴛᴇꜱ ᴛʜɪꜱ ᴍᴇꜱꜱᴀɢᴇ ᴡɪʟʟ ʙᴇ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴅᴇʟᴇᴛᴇᴅ 🗑️\n\n</b>"
                 cap+="<b><u>🍿 Your Movie Files 👇</u></b>\n\n"
                 for file in files:
-                    cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n\n</a></b>"
+                    cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), re.sub(r'_+', ' ', file['file_name']).split()))}\n\n</a></b>"
     else:
         cap = f"<b>Tʜᴇ Rᴇꜱᴜʟᴛꜱ Fᴏʀ ☞ {search}\n\nRᴇǫᴜᴇsᴛᴇᴅ Bʏ ☞ {query.from_user.mention}\n\nʀᴇsᴜʟᴛ sʜᴏᴡ ɪɴ ☞ {remaining_seconds} sᴇᴄᴏɴᴅs\n\nᴘᴏᴡᴇʀᴇᴅ ʙʏ ☞ : {query.message.chat.title} \n\n⚠️ ᴀꜰᴛᴇʀ 5 ᴍɪɴᴜᴛᴇꜱ ᴛʜɪꜱ ᴍᴇꜱꜱᴀɢᴇ ᴡɪʟʟ ʙᴇ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴅᴇʟᴇᴛᴇᴅ 🗑️\n\n</b>"
         cap+="<b><u>🍿 Your Movie Files 👇</u></b>\n\n"
         for file in files:
-            cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file['file_name'].split()))}\n\n</a></b>"
+            cap += f"<b>📁 <a href='https://telegram.me/{temp.U_NAME}?start=files_{file['file_id']}'>[{get_size(file['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), re.sub(r'_+', ' ', file['file_name']).split()))}\n\n</a></b>"
     return cap
 
 

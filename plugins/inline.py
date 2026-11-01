@@ -6,6 +6,7 @@ import logging
 from pyrogram import Client, emoji, filters, enums
 from pyrogram.errors.exceptions.bad_request_400 import QueryIdInvalid
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultCachedDocument, InlineQuery
+from TechVJ.util.telegram_rich import ButtonStyle
 from database.ia_filterdb import get_search_results
 from utils import has_force_subscribe, is_subscribed, get_size, temp, format_file_caption
 from info import CACHE_TIME, AUTH_USERS, AUTH_CHANNEL, CUSTOM_FILE_CAPTION, CHNL_LNK
@@ -107,6 +108,6 @@ async def answer(bot, query):
 
 def get_reply_markup(query):
     buttons = [[
-        InlineKeyboardButton('Search again', switch_inline_query_current_chat=query)
+        InlineKeyboardButton('Search again', switch_inline_query_current_chat=query, style=ButtonStyle.PRIMARY)
     ]]
     return InlineKeyboardMarkup(buttons)

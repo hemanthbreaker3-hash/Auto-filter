@@ -7,6 +7,15 @@ from info import *
 from utils import temp
 from typing import Union, Optional, AsyncGenerator
 from aiohttp import web
+from TechVJ.util.telegram_rich import (
+    ButtonStyle,
+    install_global_styled_buttons,
+    send_rich_message,
+    send_rich_markdown,
+    send_styled_message,
+)
+
+install_global_styled_buttons()
 
 
 class TechVJXBot(Client):
@@ -23,15 +32,12 @@ class TechVJXBot(Client):
         )
 
     async def send_rich_message(self, chat_id, html, **kwargs):
-        from TechVJ.util.telegram_rich import send_rich_message
         return await send_rich_message(self, chat_id, html, **kwargs)
 
     async def send_rich_markdown(self, chat_id, markdown, **kwargs):
-        from TechVJ.util.telegram_rich import send_rich_markdown
         return await send_rich_markdown(self, chat_id, markdown, **kwargs)
 
     async def send_styled_message(self, chat_id, text, buttons=None, **kwargs):
-        from TechVJ.util.telegram_rich import send_styled_message
         return await send_styled_message(self, chat_id, text, buttons=buttons, **kwargs)
 
     async def set_self(self):
@@ -43,29 +49,7 @@ class TechVJXBot(Client):
         limit: int,
         offset: int = 0,
     ) -> Optional[AsyncGenerator["types.Message", None]]:
-        """Iterate through a chat sequentially.
-        This convenience method does the same as repeatedly calling :meth:`~pyrogram.Client.get_messages` in a loop, thus saving
-        you from the hassle of setting up boilerplate code. It is useful for getting the whole chat messages with a
-        single call.
-        Parameters:
-            chat_id (``int`` | ``str``):
-                Unique identifier (int) or username (str) of the target chat.
-                For your personal cloud (Saved Messages) you can simply use "me" or "self".
-                For a contact that exists in your Telegram address book you can use his phone number (str).
-                
-            limit (``int``):
-                Identifier of the last message to be returned.
-                
-            offset (``int``, *optional*):
-                Identifier of the first message to be returned.
-                Defaults to 0.
-        Returns:
-            ``Generator``: A generator yielding :obj:`~pyrogram.types.Message` objects.
-        Example:
-            .. code-block:: python
-                for message in app.iter_messages("pyrogram", 1, 15000):
-                    print(message.text)
-        """
+        """Iterate through a chat sequentially."""
         current = offset
         while True:
             new_diff = min(200, limit - current + 1)
@@ -80,4 +64,3 @@ TechVJBot = TechVJXBot()
 
 multi_clients = {}
 work_loads = {}
-

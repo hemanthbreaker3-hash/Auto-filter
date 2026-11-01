@@ -4,6 +4,7 @@
 
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from TechVJ.util.telegram_rich import ButtonStyle
 from info import STREAM_MODE, URL, LOG_CHANNEL
 from database.users_chats_db import db
 from urllib.parse import quote_plus
@@ -63,9 +64,9 @@ async def stream_start(client, message):
 
     link_buttons = []
     if download_enabled:
-        link_buttons.append(InlineKeyboardButton("🚀 Fast Download 🚀", url=download))
+        link_buttons.append(InlineKeyboardButton("🚀 Fast Download 🚀", url=download, style=ButtonStyle.SUCCESS))
     if stream_enabled:
-        link_buttons.append(InlineKeyboardButton("🖥️ Watch online 🖥️", url=stream))
+        link_buttons.append(InlineKeyboardButton("🖥️ Watch online 🖥️", url=stream, style=ButtonStyle.SUCCESS))
 
     rm = InlineKeyboardMarkup([link_buttons]) if link_buttons else None
     await log_msg.reply_text(

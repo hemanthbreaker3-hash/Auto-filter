@@ -21,6 +21,7 @@ from info import ADMINS, INDEX_REQ_CHANNEL as LOG_CHANNEL
 from utils import temp
 from database.ia_filterdb import save_files_batch
 from database.users_chats_db import db, normalize_channel_id
+from TechVJ.util.telegram_rich import ButtonStyle
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -28,17 +29,11 @@ logger.setLevel(logging.INFO)
 TASKS = {}
 TASK_LOCK = asyncio.Lock()
 
-# Matches single Telegram message URLs or URL-with-range at the end:
-# e.g. https://t.me/c/3922040995/792271
-#      https://t.me/c/3922040995/792533-1042268
-#      https://t.me/c/3922040995/1/792533-1042268
-#      https://t.me/ChannelUsername/100-500
 SINGLE_OR_SHORT_RANGE_RE = re.compile(
     r"^(?:https?://)?(?:t\.me|telegram\.me|telegram\.dog)/(?:(c)/)?([A-Za-z0-9_]+|-?\d+)/(?:(\d+)/)?(\d+)(?:\s*-\s*(\d+))?(?:\?.*)?$",
     re.IGNORECASE,
 )
 
-# Finds all full Telegram message URLs inside any string:
 FULL_LINK_FINDER_RE = re.compile(
     r"(?:https?://)?(?:t\.me|telegram\.me|telegram\.dog)/(?:c/)?(?:[A-Za-z0-9_]+|-?\d+)/(?:\d+/)?\d+(?:\?[^\s\-]+)?",
     re.IGNORECASE,
@@ -73,20 +68,11 @@ def parse_link(value):
 
 
 def parse_link_or_range(value):
-    """
-    Parse any supported Telegram message link or range format:
-    1) https://t.me/c/3922040995/792271-https://t.me/c/3922040995/1042268
-    2) https://t.me/c/3922040995/792533-1042268
-    3) https://t.me/c/3922040995/792271 https://t.me/c/3922040995/1042268
-    4) https://t.me/c/3922040995/792271 to https://t.me/c/3922040995/1042268
-    5) https://t.me/c/3922040995/1042268 (single link -> indexes 1..msg_id, or skip..msg_id)
-    Returns (chat_ref, first_id, last_id, is_explicit_range).
-    """
+    """Parse any supported Telegram message link or range format."""
     raw = (value or "").strip()
     if not raw:
         raise ValueError("Invalid Telegram message link.")
 
-    # Check if there are two full links in the input
     found_links = FULL_LINK_FINDER_RE.findall(raw)
     if len(found_links) == 2:
         first_chat, first_id = parse_link(found_links[0])
@@ -99,7 +85,6 @@ def parse_link_or_range(value):
     if len(found_links) > 2:
         raise ValueError("Send at most two links per range (start-end).")
 
-    # Check for short range (https://t.me/c/123456/100-500) or single link (https://t.me/c/123456/500)
     cleaned = raw.rstrip("/")
     match = SINGLE_OR_SHORT_RANGE_RE.match(cleaned)
     if not match:
@@ -117,7 +102,6 @@ def parse_link_or_range(value):
             first_id, last_id = last_id, first_id
         return chat, first_id, last_id, True
 
-    # Single link provided: index from 1 (or configured skip) to last_id if last_id > 1
     skip_start = max(1, int(getattr(temp, "CURRENT", 1) or 1))
     if skip_start == 2 and "SKIP" not in __import__("os").environ:
         skip_start = 1
@@ -192,39 +176,39 @@ def status_text(t):
 def controls(task_id):
     t = TASKS.get(task_id)
     if not t:
-        return InlineKeyboardMarkup([[InlineKeyboardButton("📋 All Tasks", callback_data="idxctl:list:0")]])
+        return InlineKeyboardMarkup([[InlineKeyboardButton("📋 All Tasks", callback_data="idxctl:list:0", style=ButtonStyle.PRIMARY)]])
     status = t["status"]
     rows = []
     if status in ("RUNNING", "QUEUED"):
         rows.append([
-            InlineKeyboardButton("🔄 Refresh", callback_data=f"idxctl:view:{task_id}"),
-            InlineKeyboardButton("ℹ️ Popup Info", callback_data=f"idxctl:popup:{task_id}"),
+            InlineKeyboardButton("🔄 Refresh", callback_data=f"idxctl:view:{task_id}", style=ButtonStyle.PRIMARY),
+            InlineKeyboardButton("ℹ️ Popup Info", callback_data=f"idxctl:popup:{task_id}", style=ButtonStyle.SUCCESS),
         ])
         rows.append([
-            InlineKeyboardButton("⏸ Pause", callback_data=f"idxctl:pause:{task_id}"),
-            InlineKeyboardButton("✖ Cancel", callback_data=f"idxctl:cancel:{task_id}"),
+            InlineKeyboardButton("⏸ Pause", callback_data=f"idxctl:pause:{task_id}", style=ButtonStyle.DANGER),
+            InlineKeyboardButton("✖ Cancel", callback_data=f"idxctl:cancel:{task_id}", style=ButtonStyle.DANGER),
         ])
     elif status == "PAUSED":
         rows.append([
-            InlineKeyboardButton("▶️ Resume", callback_data=f"idxctl:resume:{task_id}"),
-            InlineKeyboardButton("✖ Cancel", callback_data=f"idxctl:cancel:{task_id}"),
+            InlineKeyboardButton("▶️ Resume", callback_data=f"idxctl:resume:{task_id}", style=ButtonStyle.SUCCESS),
+            InlineKeyboardButton("✖ Cancel", callback_data=f"idxctl:cancel:{task_id}", style=ButtonStyle.DANGER),
         ])
         rows.append([
-            InlineKeyboardButton("🔄 Refresh", callback_data=f"idxctl:view:{task_id}"),
-            InlineKeyboardButton("ℹ️ Popup Info", callback_data=f"idxctl:popup:{task_id}"),
+            InlineKeyboardButton("🔄 Refresh", callback_data=f"idxctl:view:{task_id}", style=ButtonStyle.PRIMARY),
+            InlineKeyboardButton("ℹ️ Popup Info", callback_data=f"idxctl:popup:{task_id}", style=ButtonStyle.SUCCESS),
         ])
     else:
-        action_row = [InlineKeyboardButton("🔁 Re-index Range", callback_data=f"idxctl:rerun:{task_id}")]
+        action_row = [InlineKeyboardButton("🔁 Re-index Range", callback_data=f"idxctl:rerun:{task_id}", style=ButtonStyle.PRIMARY)]
         if status in ("CANCELLED", "FAILED") and t.get("current", t["first"]) < t["last"]:
-            action_row.append(InlineKeyboardButton("▶️ Continue Remaining", callback_data=f"idxctl:continue:{task_id}"))
+            action_row.append(InlineKeyboardButton("▶️ Continue Remaining", callback_data=f"idxctl:continue:{task_id}", style=ButtonStyle.SUCCESS))
         rows.append(action_row)
         rows.append([
-            InlineKeyboardButton("ℹ️ Popup Info", callback_data=f"idxctl:popup:{task_id}"),
-            InlineKeyboardButton("🗑 Remove Task", callback_data=f"idxctl:delete:{task_id}"),
+            InlineKeyboardButton("ℹ️ Popup Info", callback_data=f"idxctl:popup:{task_id}", style=ButtonStyle.PRIMARY),
+            InlineKeyboardButton("🗑 Remove Task", callback_data=f"idxctl:delete:{task_id}", style=ButtonStyle.DANGER),
         ])
     rows.append([
-        InlineKeyboardButton("📋 All Tasks (/indexstatus)", callback_data="idxctl:list:0"),
-        InlineKeyboardButton("➕ New /index", callback_data="idxctl:new:0"),
+        InlineKeyboardButton("📋 All Tasks (/indexstatus)", callback_data="idxctl:list:0", style=ButtonStyle.PRIMARY),
+        InlineKeyboardButton("➕ New /index", callback_data="idxctl:new:0", style=ButtonStyle.SUCCESS),
     ])
     return InlineKeyboardMarkup(rows)
 
@@ -239,8 +223,8 @@ def _tasks_overview_text_and_markup():
             "or click the button below to start a new index task."
         )
         markup = InlineKeyboardMarkup([
-            [InlineKeyboardButton("➕ Start New /index", callback_data="idxctl:new:0")],
-            [InlineKeyboardButton("🔄 Refresh", callback_data="idxctl:list:0")],
+            [InlineKeyboardButton("➕ Start New /index", callback_data="idxctl:new:0", style=ButtonStyle.SUCCESS)],
+            [InlineKeyboardButton("🔄 Refresh", callback_data="idxctl:list:0", style=ButtonStyle.PRIMARY)],
         ])
         return text, markup
 
@@ -269,33 +253,43 @@ def _tasks_overview_text_and_markup():
         "CANCELLED": "🛑",
         "FAILED": "❌",
     }
+    style_map = {
+        "RUNNING": ButtonStyle.SUCCESS,
+        "QUEUED": ButtonStyle.PRIMARY,
+        "PAUSED": ButtonStyle.DANGER,
+        "COMPLETED": ButtonStyle.PRIMARY,
+        "CANCELLED": ButtonStyle.DANGER,
+        "FAILED": ButtonStyle.DANGER,
+    }
     for t in reversed(tasks[-20:]):
         total_range = max(1, int(t["last"] - t["first"] + 1))
         pct = min(100.0, (t["processed"] / total_range) * 100.0) if t["status"] != "COMPLETED" else 100.0
         icon = icon_map.get(t["status"], "⚪")
+        btn_style = style_map.get(t["status"], ButtonStyle.PRIMARY)
         title = (t.get("chat_title") or str(t["chat"]))[:14]
         rows.append([
             InlineKeyboardButton(
                 f"{icon} #{t['short']} · {title} · {pct:.0f}% ({t['saved']:,} saved)",
                 callback_data=f"idxctl:view:{t['id']}",
+                style=btn_style,
             )
         ])
 
     bulk_row = []
     if running > 0:
-        bulk_row.append(InlineKeyboardButton("⏸ Pause All", callback_data="idxctl:pauseall:0"))
+        bulk_row.append(InlineKeyboardButton("⏸ Pause All", callback_data="idxctl:pauseall:0", style=ButtonStyle.DANGER))
     if paused > 0:
-        bulk_row.append(InlineKeyboardButton("▶️ Resume All", callback_data="idxctl:resumeall:0"))
+        bulk_row.append(InlineKeyboardButton("▶️ Resume All", callback_data="idxctl:resumeall:0", style=ButtonStyle.SUCCESS))
     if running > 0 or paused > 0:
-        bulk_row.append(InlineKeyboardButton("✖ Cancel All", callback_data="idxctl:cancelall:0"))
+        bulk_row.append(InlineKeyboardButton("✖ Cancel All", callback_data="idxctl:cancelall:0", style=ButtonStyle.DANGER))
     if bulk_row:
         rows.append(bulk_row)
 
-    bottom_row = [InlineKeyboardButton("🔄 Refresh List", callback_data="idxctl:list:0")]
+    bottom_row = [InlineKeyboardButton("🔄 Refresh List", callback_data="idxctl:list:0", style=ButtonStyle.PRIMARY)]
     if completed + cancelled + failed > 0:
-        bottom_row.append(InlineKeyboardButton("🧹 Clear Finished", callback_data="idxctl:clear:0"))
+        bottom_row.append(InlineKeyboardButton("🧹 Clear Finished", callback_data="idxctl:clear:0", style=ButtonStyle.DANGER))
     rows.append(bottom_row)
-    rows.append([InlineKeyboardButton("➕ Start New /index Task", callback_data="idxctl:new:0")])
+    rows.append([InlineKeyboardButton("➕ Start New /index Task", callback_data="idxctl:new:0", style=ButtonStyle.SUCCESS)])
     return text, InlineKeyboardMarkup(rows)
 
 
@@ -317,6 +311,27 @@ async def _notify_task_messages(bot, t):
             pass
         except Exception:
             pass
+
+
+def _extract_indexable_media(msg):
+    """Extract any indexable media object from a message without skipping underscore or extensionless files."""
+    if not msg:
+        return None
+    if getattr(msg, "media", None) and hasattr(msg.media, "value"):
+        if msg.media in (
+            enums.MessageMediaType.VIDEO,
+            enums.MessageMediaType.AUDIO,
+            enums.MessageMediaType.DOCUMENT,
+            enums.MessageMediaType.ANIMATION,
+        ):
+            media = getattr(msg, msg.media.value, None)
+            if media and getattr(media, "file_id", None):
+                return media
+    for attr in ("document", "video", "audio", "animation"):
+        media = getattr(msg, attr, None)
+        if media and getattr(media, "file_id", None):
+            return media
+    return None
 
 
 async def run_index(bot, task_id, chat, first_id, last_id, status_msg):
@@ -401,17 +416,9 @@ async def run_index(bot, task_id, chat, first_id, last_id, status_msg):
 
                 if not msg or getattr(msg, "empty", False) or getattr(msg, "service", False):
                     t["deleted"] += 1
-                elif not msg.media:
-                    t["skipped"] += 1
-                elif msg.media not in (
-                    enums.MessageMediaType.VIDEO,
-                    enums.MessageMediaType.AUDIO,
-                    enums.MessageMediaType.DOCUMENT,
-                ):
-                    t["skipped"] += 1
                 else:
-                    media = getattr(msg, msg.media.value, None)
-                    if media and getattr(media, "file_id", None):
+                    media = _extract_indexable_media(msg)
+                    if media:
                         media.caption = msg.caption
                         batch.append(media)
                         if len(batch) >= 100:
@@ -467,7 +474,6 @@ async def start_task(bot, user_id, chat, first_id, last_id):
     except Exception as exc:
         raise ValueError(f"Cannot access the channel/messages: {exc}")
 
-    # Automatically register this channel in managed channels so future incoming files auto-index
     try:
         await db.add_managed_channel(chat_id)
     except Exception:
@@ -543,7 +549,6 @@ async def _process_index_submission(bot, user_id, reply_message, raw_text=None, 
     if not text:
         return await reply_message.reply_text("❌ Invalid Telegram message link.")
 
-    # Support multiple ranges separated by newlines or commas
     segments = [seg.strip() for seg in re.split(r"[\r\n,]+", text) if seg.strip()]
     if not segments:
         return await reply_message.reply_text("❌ Invalid Telegram message link.")
@@ -639,7 +644,6 @@ async def cancel_index_command(bot, message):
     return await message.reply_text(f"🛑 Cancelled index task(s): <code>{', '.join(cancelled)}</code>")
 
 
-# Use group=-1 so generic callback handlers (e.g. rename's 'cancel' or pm_filter's catch-all) never intercept index controls
 @Client.on_callback_query(
     filters.regex(r"^idxctl:(view|cancel|pause|resume|popup|rerun|continue|delete|list|clear|cancelall|pauseall|resumeall|new):([A-Za-z0-9_]+)$"),
     group=-1,
@@ -732,7 +736,6 @@ async def index_controls(bot, query):
             pass
         return await query.answer("Task not found or already removed.", show_alert=True)
 
-    # Track this message as a viewer of the task so live updates also refresh it
     t.setdefault("viewers", set()).add((query.message.chat.id, query.message.id))
 
     if action == "popup":
@@ -807,7 +810,6 @@ async def index_controls(bot, query):
             pass
         return
 
-    # Default: action == "view"
     await query.answer("Task status updated.")
     try:
         await query.message.edit_text(status_text(t), reply_markup=controls(task_id), disable_web_page_preview=True)
@@ -815,7 +817,6 @@ async def index_controls(bot, query):
         pass
 
 
-# Legacy moderator request callback compatibility.
 @Client.on_callback_query(filters.regex(r"^index#"), group=-1)
 async def legacy_index_callback(bot, query):
     if not query.from_user or not _is_admin(query.from_user.id):

@@ -7,6 +7,7 @@ from info import ADMINS
 from plugins.admin_filter import ADMIN_FILTER
 from pyrogram import filters, Client, enums
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from TechVJ.util.telegram_rich import ButtonStyle
 from database.gfilters_mdb import add_gfilter, get_gfilters, delete_gfilter, count_gfilters
 from database.connections_mdb import active_connection
 from utils import get_file_id, gfilterparser, split_quotes
@@ -131,8 +132,8 @@ async def delallgfilters(client, message):
     await message.reply_text(
             f"Do you want to continue??",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton(text="YES",callback_data="gfiltersdeleteallconfirm")],
-                [InlineKeyboardButton(text="CANCEL",callback_data="gfiltersdeleteallcancel")]
+                [InlineKeyboardButton(text="YES",callback_data="gfiltersdeleteallconfirm", style=ButtonStyle.DANGER)],
+                [InlineKeyboardButton(text="CANCEL",callback_data="gfiltersdeleteallcancel", style=ButtonStyle.DANGER)]
             ]),
             quote=True
         )

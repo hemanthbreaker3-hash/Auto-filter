@@ -5,6 +5,7 @@
 from pyrogram import Client, filters
 from utils import temp
 from pyrogram.types import Message
+from TechVJ.util.telegram_rich import ButtonStyle
 from database.users_chats_db import db
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from info import SUPPORT_CHAT
@@ -30,7 +31,7 @@ async def ban_reply(bot, message):
 @Client.on_message(filters.group & disabled_group & filters.incoming)
 async def grp_bd(bot, message):
     buttons = [[
-        InlineKeyboardButton('Support', url=f'https://t.me/{SUPPORT_CHAT}')
+        InlineKeyboardButton('Support', url=f'https://t.me/{SUPPORT_CHAT}', style=ButtonStyle.PRIMARY)
     ]]
     reply_markup=InlineKeyboardMarkup(buttons)
     vazha = await db.get_chat(message.chat.id)

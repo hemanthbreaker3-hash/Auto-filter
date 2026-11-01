@@ -12,6 +12,7 @@ from pyrogram.enums import ChatMemberStatus, ChatType
 from database.users_chats_db import db, normalize_channel_id
 from database.ia_filterdb import col, sec_col, count_all_file_documents
 from database.mongo_nodes import list_nodes, add_node, set_node_enabled, remove_node, mask_uri
+from TechVJ.util.telegram_rich import ButtonStyle
 
 BRAND = "TGBOXOFFICE"
 PREFIX = "tgbox_panel"
@@ -58,64 +59,66 @@ async def _resolve_channel_input(client, raw_value):
 def _keyboard(page="home", channels=None):
     if page == "fsub":
         rows = [
-            [InlineKeyboardButton("➕ Add FSub", callback_data=f"{PREFIX}:fsub_help_add"),
-             InlineKeyboardButton("➖ Remove FSub", callback_data=f"{PREFIX}:fsub_help_remove")],
-            [InlineKeyboardButton("📋 List destinations", callback_data=f"{PREFIX}:fsub")],
-            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home"),
-             InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:refresh")],
+            [InlineKeyboardButton("➕ Add FSub", callback_data=f"{PREFIX}:fsub_help_add", style=ButtonStyle.SUCCESS),
+             InlineKeyboardButton("➖ Remove FSub", callback_data=f"{PREFIX}:fsub_help_remove", style=ButtonStyle.DANGER)],
+            [InlineKeyboardButton("📋 List destinations", callback_data=f"{PREFIX}:fsub", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home", style=ButtonStyle.DANGER),
+             InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:refresh", style=ButtonStyle.PRIMARY)],
         ]
     elif page == "channels":
         rows = [
-            [InlineKeyboardButton("➕ Add Channel", callback_data=f"{PREFIX}:chan_add_prompt"),
-             InlineKeyboardButton("➖ Remove Channel", callback_data=f"{PREFIX}:chan_remove_prompt")],
-            [InlineKeyboardButton("⏯ Toggle Auto-Index", callback_data=f"{PREFIX}:chan_toggle_auto")],
+            [InlineKeyboardButton("➕ Add Channel", callback_data=f"{PREFIX}:chan_add_prompt", style=ButtonStyle.SUCCESS),
+             InlineKeyboardButton("➖ Remove Channel", callback_data=f"{PREFIX}:chan_remove_prompt", style=ButtonStyle.DANGER)],
+            [InlineKeyboardButton("⏯ Toggle Auto-Index", callback_data=f"{PREFIX}:chan_toggle_auto", style=ButtonStyle.PRIMARY)],
         ]
         for cid in (channels or [])[:10]:
             rows.append([
-                InlineKeyboardButton(f"🗑 Remove {cid}", callback_data=f"{PREFIX}:chan_del_{cid}"),
+                InlineKeyboardButton(f"🗑 Remove {cid}", callback_data=f"{PREFIX}:chan_del_{cid}", style=ButtonStyle.DANGER),
             ])
         rows.extend([
-            [InlineKeyboardButton("📁 Open /indexstatus", callback_data="idxctl:list:0"),
-             InlineKeyboardButton("➕ Start /index", callback_data="idxctl:new:0")],
-            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home"),
-             InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:channels")],
+            [InlineKeyboardButton("📁 Open /indexstatus", callback_data="idxctl:list:0", style=ButtonStyle.PRIMARY),
+             InlineKeyboardButton("➕ Start /index", callback_data="idxctl:new:0", style=ButtonStyle.SUCCESS)],
+            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home", style=ButtonStyle.DANGER),
+             InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:channels", style=ButtonStyle.PRIMARY)],
         ])
     elif page == "mongo":
         rows = []
         for node in list_nodes()[:15]:
             action = "disable" if node.get("enabled", True) else "enable"
             label = "⏸ Disable" if action == "disable" else "▶️ Enable"
-            rows.append([InlineKeyboardButton(f"{label} Mongo #{node['_id']}", callback_data=f"{PREFIX}:mongo_{action}_{node['_id']}")])
+            btn_style = ButtonStyle.DANGER if action == "disable" else ButtonStyle.SUCCESS
+            rows.append([InlineKeyboardButton(f"{label} Mongo #{node['_id']}", callback_data=f"{PREFIX}:mongo_{action}_{node['_id']}", style=btn_style)])
         rows.extend([
-            [InlineKeyboardButton("➕ Add MongoDB", callback_data=f"{PREFIX}:mongo_help_add"),
-             InlineKeyboardButton("📋 Refresh list", callback_data=f"{PREFIX}:mongo")],
-            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home")],
+            [InlineKeyboardButton("➕ Add MongoDB", callback_data=f"{PREFIX}:mongo_help_add", style=ButtonStyle.SUCCESS),
+             InlineKeyboardButton("📋 Refresh list", callback_data=f"{PREFIX}:mongo", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home", style=ButtonStyle.DANGER)],
         ])
     elif page == "links":
         rows = [
-            [InlineKeyboardButton("⏯ Toggle Stream", callback_data=f"{PREFIX}:link_toggle_stream")],
-            [InlineKeyboardButton("⏯ Toggle Download", callback_data=f"{PREFIX}:link_toggle_download")],
-            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home"), InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:links")],
+            [InlineKeyboardButton("⏯ Toggle Stream", callback_data=f"{PREFIX}:link_toggle_stream", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("⏯ Toggle Download", callback_data=f"{PREFIX}:link_toggle_download", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home", style=ButtonStyle.DANGER),
+             InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:links", style=ButtonStyle.PRIMARY)],
         ]
     elif page == "admins":
         rows = [
-            [InlineKeyboardButton("➕ Add admin", callback_data=f"{PREFIX}:help_add"),
-             InlineKeyboardButton("➖ Remove admin", callback_data=f"{PREFIX}:help_remove")],
-            [InlineKeyboardButton("👥 List admins", callback_data=f"{PREFIX}:admins")],
-            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home"),
-             InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:refresh")],
+            [InlineKeyboardButton("➕ Add admin", callback_data=f"{PREFIX}:help_add", style=ButtonStyle.SUCCESS),
+             InlineKeyboardButton("➖ Remove admin", callback_data=f"{PREFIX}:help_remove", style=ButtonStyle.DANGER)],
+            [InlineKeyboardButton("👥 List admins", callback_data=f"{PREFIX}:admins", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("⬅️ Dashboard", callback_data=f"{PREFIX}:home", style=ButtonStyle.DANGER),
+             InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:refresh", style=ButtonStyle.PRIMARY)],
         ]
     else:
         rows = [
-            [InlineKeyboardButton("👥 Admins", callback_data=f"{PREFIX}:admins"),
-             InlineKeyboardButton("📡 Channels", callback_data=f"{PREFIX}:channels")],
-            [InlineKeyboardButton("📊 Statistics", callback_data=f"{PREFIX}:stats"),
-             InlineKeyboardButton("💾 Backup help", callback_data=f"{PREFIX}:backup")],
-            [InlineKeyboardButton("🔒 Force Subscribe", callback_data=f"{PREFIX}:fsub")],
-            [InlineKeyboardButton("🗄 MongoDB Manager", callback_data=f"{PREFIX}:mongo")],
-            [InlineKeyboardButton("🔗 Stream / Download", callback_data=f"{PREFIX}:links")],
-            [InlineKeyboardButton("📁 Index Tasks (/indexstatus)", callback_data="idxctl:list:0")],
-            [InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:refresh")],
+            [InlineKeyboardButton("👥 Admins", callback_data=f"{PREFIX}:admins", style=ButtonStyle.PRIMARY),
+             InlineKeyboardButton("📡 Channels", callback_data=f"{PREFIX}:channels", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("📊 Statistics", callback_data=f"{PREFIX}:stats", style=ButtonStyle.SUCCESS),
+             InlineKeyboardButton("💾 Backup help", callback_data=f"{PREFIX}:backup", style=ButtonStyle.SUCCESS)],
+            [InlineKeyboardButton("🔒 Force Subscribe", callback_data=f"{PREFIX}:fsub", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("🗄 MongoDB Manager", callback_data=f"{PREFIX}:mongo", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("🔗 Stream / Download", callback_data=f"{PREFIX}:links", style=ButtonStyle.PRIMARY)],
+            [InlineKeyboardButton("📁 Index Tasks (/indexstatus)", callback_data="idxctl:list:0", style=ButtonStyle.SUCCESS)],
+            [InlineKeyboardButton("🔄 Refresh", callback_data=f"{PREFIX}:refresh", style=ButtonStyle.PRIMARY)],
         ]
     return InlineKeyboardMarkup(rows)
 
@@ -126,8 +129,8 @@ def _button_rows(page="home", channels=None):
             [{"text": "➕ Add FSub", "callback_data": f"{PREFIX}:fsub_help_add", "style": "success"},
              {"text": "➖ Remove FSub", "callback_data": f"{PREFIX}:fsub_help_remove", "style": "danger"}],
             [{"text": "📋 List destinations", "callback_data": f"{PREFIX}:fsub", "style": "primary"}],
-            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home"},
-             {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:refresh"}],
+            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home", "style": "danger"},
+             {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:refresh", "style": "primary"}],
         ]
     if page == "channels":
         rows = [
@@ -142,8 +145,8 @@ def _button_rows(page="home", channels=None):
         rows.extend([
             [{"text": "📁 Open /indexstatus", "callback_data": "idxctl:list:0", "style": "primary"},
              {"text": "➕ Start /index", "callback_data": "idxctl:new:0", "style": "success"}],
-            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home"},
-             {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:channels"}],
+            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home", "style": "danger"},
+             {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:channels", "style": "primary"}],
         ])
         return rows
     if page == "mongo":
@@ -155,33 +158,34 @@ def _button_rows(page="home", channels=None):
         rows.extend([
             [{"text": "➕ Add MongoDB", "callback_data": f"{PREFIX}:mongo_help_add", "style": "success"},
              {"text": "📋 Refresh list", "callback_data": f"{PREFIX}:mongo", "style": "primary"}],
-            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home"}],
+            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home", "style": "danger"}],
         ])
         return rows
     if page == "links":
         return [
             [{"text": "⏯ Toggle Stream", "callback_data": f"{PREFIX}:link_toggle_stream", "style": "primary"}],
             [{"text": "⏯ Toggle Download", "callback_data": f"{PREFIX}:link_toggle_download", "style": "primary"}],
-            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home"}, {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:links"}],
+            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home", "style": "danger"},
+             {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:links", "style": "primary"}],
         ]
     if page == "admins":
         return [
             [{"text": "➕ Add admin", "callback_data": f"{PREFIX}:help_add", "style": "success"},
              {"text": "➖ Remove admin", "callback_data": f"{PREFIX}:help_remove", "style": "danger"}],
             [{"text": "👥 List admins", "callback_data": f"{PREFIX}:admins", "style": "primary"}],
-            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home"},
-             {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:refresh"}],
+            [{"text": "⬅️ Dashboard", "callback_data": f"{PREFIX}:home", "style": "danger"},
+             {"text": "🔄 Refresh", "callback_data": f"{PREFIX}:refresh", "style": "primary"}],
         ]
     return [
         [{"text": "👥 Admins", "callback_data": f"{PREFIX}:admins", "style": "primary"},
          {"text": "📡 Channels", "callback_data": f"{PREFIX}:channels", "style": "primary"}],
         [{"text": "📊 Statistics", "callback_data": f"{PREFIX}:stats", "style": "success"},
-         {"text": "💾 Backup help", "callback_data": f"{PREFIX}:backup"}],
+         {"text": "💾 Backup help", "callback_data": f"{PREFIX}:backup", "style": "success"}],
         [{"text": "🔒 Force Subscribe", "callback_data": f"{PREFIX}:fsub", "style": "primary"}],
         [{"text": "🗄 MongoDB Manager", "callback_data": f"{PREFIX}:mongo", "style": "primary"}],
         [{"text": "🔗 Stream / Download", "callback_data": f"{PREFIX}:links", "style": "primary"}],
         [{"text": "📁 Index Tasks (/indexstatus)", "callback_data": "idxctl:list:0", "style": "success"}],
-        [{"text": "🔄 Refresh", "callback_data": f"{PREFIX}:refresh"}],
+        [{"text": "🔄 Refresh", "callback_data": f"{PREFIX}:refresh", "style": "primary"}],
     ]
 
 
@@ -343,9 +347,9 @@ async def _panel_text(page="home", client=None, page_number=1):
         return (f"<b>💾 {BRAND} • BACKUP & RESTORE</b>\n\n"
                 "<code>/save</code> — open the interactive backup and import menu.\n"
                 "💾 Backup sends a compressed <code>.zip</code> database archive.\n"
-                "📥 Import asks for a backup ZIP, validates it, then requests confirmation.\n\n"
+                "📥 Import asks for a backup ZIP and restores your database immediately upon receiving it.\n\n"
                 "<b>⚠️ Restore replaces matching collections.</b> Keep a fresh backup before restoring.\n"
-                "Legacy commands: <code>/add save</code> and <code>/add load confirm</code>.")
+                "Legacy commands: <code>/add save</code> and <code>/add load</code>.")
     return (f"<b>✦ {BRAND} CONTROL CENTER</b>\n"
             "<i>Premium administration • live bot overview</i>\n\n"
             f"<b>📊 Overview</b>\n👤 Users: <code>{users:,}</code>\n"
