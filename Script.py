@@ -1,753 +1,443 @@
-# Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
+# Don't Remove Credit @MoviesZoneFlix
+# Official Update Channel: https://t.me/+Kmi6jBTE_MY4N2Q9
+# Contact: https://t.me/alonekingstarbackagain
 
 class script(object):
-    START_TXT = """<b><blockquote>𝗛𝗘𝗟𝗟𝗢 {} 👋,</blockquote>
+    START_TXT = """<b><blockquote>✦ 𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𝗧𝗢 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • {} 👋</blockquote>
+
+🎬 <b>MoviesZoneFlix</b> is your ultra-fast, premium Telegram movie & series search engine.
+✨ Search instant high-quality files in our group or add me to your group!</b>"""
+
+    CLONE_START_TXT = """<b><blockquote>✦ 𝗪𝗘𝗟𝗖𝗢𝗠𝗘 • {} 👋
+🤖 Bot: <a href=https://t.me/{}>{}</a></blockquote>
+
+🎬 <b>MoviesZoneFlix</b> — Your smart, high-speed Telegram movie & series search assistant.</b>"""
     
-𝗧𝗚𝗕𝗢𝗫𝗢𝗙𝗙𝗜𝗖𝗘 is your 𝘧𝘢𝘴𝘵, 𝗽𝗼𝘄𝗲𝗿𝗳𝘂𝗹 Telegram file search assistant. ʏᴏᴜ ᴄᴀɴ ᴜꜱᴇ ᴍᴇ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴛᴏ ᴇᴀʀɴ ᴜɴʟɪᴍɪᴛᴇᴅ ᴍᴏɴᴇʏ...💸</b>"""
+    HELP_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗛𝗘𝗟𝗣 & 𝗙𝗘𝗔𝗧𝗨𝗥𝗘𝗦 ✦</blockquote>
 
-    CLONE_START_TXT = """<b><blockquote>ʜᴇʟʟᴏ {}, ᴍʏ ɴᴀᴍᴇ <a href=https://t.me/{}>{}</a></blockquote>
+👋 Hello {}, select any module below to explore all commands and features:</b>"""
+
+    ABOUT_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗔𝗕𝗢𝗨𝗧 ✦</blockquote>
+
+‣ 🎬 <b>Bot Name:</b> <a href=https://t.me/{}>{}</a>
+‣ 👑 <b>Owner / Contact:</b> <a href={}>Contact Admin</a>
+‣ 📢 <b>Update Channel:</b> <a href='https://t.me/+Kmi6jBTE_MY4N2Q9'>MoviesZoneFlix Updates</a>
+‣ 🔍 <b>Movie Search Group:</b> <a href='https://t.me/movieszoneflixsearch'>MoviesZoneFlix Search</a>
+‣ ⚙️ <b>Framework:</b> <a href='https://docs.pyrogram.org/'>Pyrogram</a> • <a href='https://www.python.org/'>Python 3</a>
+‣ 🗄 <b>Database:</b> <a href='https://www.mongodb.com/'>MongoDB</a>
+‣ 🚀 <b>Build Version:</b> <code>v3.0 [MoviesZoneFlix Edition]</code></b>"""
+
+    CLONE_ABOUT_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗔𝗕𝗢𝗨𝗧 ✦</blockquote>
+
+‣ 🎬 <b>Bot Name:</b> {}
+‣ 🤖 <b>Powered By:</b> <a href=https://t.me/{}>{}</a>
+‣ 📢 <b>Update Channel:</b> <a href='https://t.me/+Kmi6jBTE_MY4N2Q9'>MoviesZoneFlix Updates</a>
+‣ 🔍 <b>Search Group:</b> <a href='https://t.me/movieszoneflixsearch'>MoviesZoneFlix Search</a>
+‣ 🚀 <b>Build Version:</b> <code>v3.0 [MoviesZoneFlix Edition]</code></b>"""
+
+    CLONE_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗖𝗟𝗢𝗡𝗘 𝗠𝗢𝗗𝗘 ✦</blockquote>
+
+• Create your own personal clone bot using <code>/clone</code>
+• Broadcast messages to your clone bot users
+• Instant access to all indexed MoviesZoneFlix files without manual uploads
+
+👨‍💻 <b>Command:</b> <code>/clone</code></b>"""
+
+    SUBSCRIPTION_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗣𝗥𝗘𝗠𝗜𝗨𝗠 & 𝗥𝗘𝗙𝗘𝗥𝗥𝗔𝗟 ✦</blockquote>
+
+🎁 Share your referral link with friends, groups, and channels to unlock <b>Free Premium for {}</b>!
+
+🔗 <b>Your Referral Link:</b>
+<code>https://telegram.me/{}?start=MZF-{}</code>
+
+✨ Once <b>{}</b> unique users start the bot via your link, your account is automatically upgraded to Premium.
+💎 Or view instant paid plans with <code>/plan</code>.</b>"""
+
+    MANUELFILTER_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗠𝗔𝗡𝗨𝗔𝗟 𝗙𝗜𝗟𝗧𝗘𝗥𝗦 ✦</blockquote>
+
+Set automated custom replies with buttons or media for specific keywords in your group.
+
+<b>Notes:</b>
+1. MoviesZoneFlix must be an administrator in your group.
+2. Only group admins can add or remove filters.
+3. Alert buttons support up to 64 characters.
+
+<b>Commands:</b>
+• <code>/filter keyword reply</code> — Add a filter in a chat
+• <code>/filters</code> — List all filters in a chat
+• <code>/del keyword</code> — Delete a specific filter
+• <code>/delall</code> — Delete all filters in a chat (Owner only)</b>"""
+
+    BUTTON_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗜𝗡𝗟𝗜𝗡𝗘 𝗕𝗨𝗧𝗧𝗢𝗡𝗦 ✦</blockquote>
+
+MoviesZoneFlix supports URL and Alert inline buttons inside filters.
+
+<b>URL Button Format:</b>
+<code>[MoviesZoneFlix](buttonurl:https://t.me/movieszoneflixsearch)</code>
+
+<b>Alert Button Format:</b>
+<code>[Alert Label](buttonalert:Your popup alert message)</code></b>"""
+
+    AUTOFILTER_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗔𝗨𝗧𝗢 𝗙𝗜𝗟𝗧𝗘𝗥 & 𝗔𝗨𝗧𝗢 𝗣𝗢𝗦𝗧 ✦</blockquote>
+
+<b>📁 Channel Indexing & 3-Quality Auto-Posting:</b>
+1. Make MoviesZoneFlix an admin in your file channels and destination post channel.
+2. Use <code>/auto</code> or <code>/auto on</code> to enable auto-indexing and set your destination post channel ID.
+3. Supports both <b>Series</b> (every 1 episode with 3 qualities posts Series, Season, Episode, Quality, and Language/Languages) and <b>Movies</b> automatically!
+
+<b>🔍 Group Auto-Filter:</b>
+1. Add MoviesZoneFlix as admin in your group.
+2. Connect your group with <code>/connect</code> and customize via <code>/settings</code>.</b>"""
+
+    CONNECTION_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗖𝗢𝗡𝗡𝗘𝗖𝗧𝗜𝗢𝗡𝗦 ✦</blockquote>
+
+Connect your group to private chat to manage filters and settings cleanly without group spam.
+
+<b>Commands:</b>
+• <code>/connect group_id</code> — Connect a group to PM
+• <code>/disconnect</code> — Disconnect from a group
+• <code>/connections</code> — View all connected groups</b>"""
+
+    EXTRAMOD_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗘𝗫𝗧𝗥𝗔 𝗧𝗢𝗢𝗟𝗦 ✦</blockquote>
+
+👑 <b>Owner / Contact:</b> <a href={}>Contact Admin</a>
+📢 <b>Update Channel:</b> <a href={}>MoviesZoneFlix Updates</a>
+
+• <code>/id</code> — Get Telegram ID of a user or chat
+• <code>/info</code> — Get full profile info of a user
+• <code>/song name</code> — Download any song in high quality
+• <code>/video link</code> — Download YouTube video in HD
+• <code>/telegraph</code> — Upload photo/video under 5MB to Telegraph
+• <code>/tts</code> — Convert text to voice speech
+• <code>/font text</code> — Generate stylish Unicode fonts</b>"""
+
+    ADMIN_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗔𝗗𝗠𝗜𝗡 𝗖𝗢𝗡𝗧𝗥𝗢𝗟𝗦 ✦</blockquote>
+
+• <code>/auto</code> — Enable/disable Series & Movie 3-quality auto-posting
+• <code>/shortmode</code> — Select Shortener Mode (Time Expiry / Credits) & manage shorteners
+• <code>/panel</code> — Open interactive MoviesZoneFlix Control Center
+• <code>/save</code> — Backup database to ZIP or import/restore from ZIP
+• <code>/index</code> — Index files from channel link or range
+• <code>/indexstatus</code> — View live indexing tasks
+• <code>/logs</code> — Get recent log file
+• <code>/stats</code> — View database and storage statistics
+• <code>/delete</code> — Delete a specific file from DB
+• <code>/deletefiles keyword</code> — Delete matching files from DB
+• <code>/deleteall</code> — Clear all indexed files
+• <code>/users</code> & <code>/chats</code> — List users and groups
+• <code>/ban</code> & <code>/unban</code> — Ban or unban a user
+• <code>/disable</code> & <code>/enable</code> — Disable or enable a group
+• <code>/channel</code> — List configured index channels
+• <code>/broadcast</code> & <code>/grp_broadcast</code> — Broadcast to users/groups
+• <code>/gfilter</code>, <code>/gfilters</code>, <code>/delg</code>, <code>/delallg</code> — Global filters</b>"""
+
+    SEC_STATUS_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗧𝗔𝗧𝗜𝗦𝗧𝗜𝗖𝗦 ✦
+
+👤 Total Users: <code>{}</code>
+👥 Total Groups: <code>{}</code>
+📁 Total Files: <code>{}</code>
+💾 Used Storage: <code>{} MB</code>
+🟢 Free Storage: <code>{} MB</code></blockquote></b>"""
     
-𝗧𝗚𝗕𝗢𝗫𝗢𝗙𝗙𝗜𝗖𝗘 — 𝘆𝗼𝘂𝗿 𝘀𝗺𝗮𝗿𝘁, 𝗳𝗮𝘀𝘁 Telegram file search assistant.</b>"""
+    STATUS_TXT = """<b>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗗𝗔𝗧𝗔𝗕𝗔𝗦𝗘 𝗦𝗧𝗔𝗧𝗨𝗦 ✦
+
+📁 <b>Total Indexed Files:</b> <code>{}</code>
+
+<blockquote>👥 <b>Users & Groups DB</b>
+• Users: <code>{}</code>
+• Groups: <code>{}</code></blockquote>
+
+<blockquote>🗄 <b>Primary File DB</b>
+• Files: <code>{}</code>
+• Used: <code>{} MB</code> • Free: <code>{} MB</code></blockquote>
+
+<blockquote>🗄 <b>Secondary File DB</b>
+• Files: <code>{}</code>
+• Used: <code>{} MB</code> • Free: <code>{} MB</code></blockquote>
+
+<blockquote>⚙️ <b>Auxiliary DB</b>
+• Used: <code>{} MB</code> • Free: <code>{} MB</code></blockquote></b>"""
     
-    HELP_TXT = """<b><blockquote>ʜᴇʟʟᴏ {}
-ʜᴇʀᴇ ɪs ᴀʟʟ ᴍʏ ᴜsᴇғᴜʟʟ ғᴇᴀᴛᴜʀᴇs.</blockquote></b>"""
+    LOG_TEXT_G = """#NewGroup • MoviesZoneFlix
+Group = {} (<code>{}</code>)
+Total Members = <code>{}</code>
+Added By = {}"""
 
-    ABOUT_TXT = """<b><blockquote>⍟───[ ᴍʏ ᴅᴇᴛᴀɪʟꜱ ]───⍟</blockquote>
-    
-‣ ᴍʏ ɴᴀᴍᴇ : <a href=https://t.me/{}>{}</a>
-‣ ᴍʏ ʙᴇsᴛ ғʀɪᴇɴᴅ : <a href='tg://settings'>ᴛʜɪs ᴘᴇʀsᴏɴ</a> 
-‣ ᴅᴇᴠᴇʟᴏᴘᴇʀ : <a href={}>ᴏᴡɴᴇʀ</a> 
-‣ ʟɪʙʀᴀʀʏ : <a href='https://docs.pyrogram.org/'>ᴘʏʀᴏɢʀᴀᴍ</a> 
-‣ ʟᴀɴɢᴜᴀɢᴇ : <a href='https://www.python.org/download/releases/3.0/'>ᴘʏᴛʜᴏɴ 3</a> 
-‣ ᴅᴀᴛᴀ ʙᴀsᴇ : <a href='https://www.mongodb.com/'>ᴍᴏɴɢᴏ ᴅʙ</a> 
-‣ ʙᴏᴛ sᴇʀᴠᴇʀ : <a href='https://heroku.com'>ʜᴇʀᴏᴋᴜ</a> 
-‣ ʙᴜɪʟᴅ sᴛᴀᴛᴜs : ᴠ2.7.1 [sᴛᴀʙʟᴇ]></b>"""
-
-    CLONE_ABOUT_TXT = """<b><blockquote>⍟───[ ᴍʏ ᴀʙᴏᴜᴛ ]───⍟</blockquote>
-    
-‣ ᴍʏ ɴᴀᴍᴇ : {}
-‣ ᴍʏ ʙᴇsᴛ ғʀɪᴇɴᴅ : <a href='tg://settings'>ᴛʜɪs ᴘᴇʀsᴏɴ</a> 
-‣ ᴄʟᴏɴᴇᴅ ғʀᴏᴍ : <a href=https://t.me/{}>{}</a>
-‣ ʟɪʙʀᴀʀʏ : <a href='https://docs.pyrogram.org/'>ᴘʏʀᴏɢʀᴀᴍ</a> 
-‣ ʟᴀɴɢᴜᴀɢᴇ : <a href='https://www.python.org/download/releases/3.0/'>ᴘʏᴛʜᴏɴ 3</a> 
-‣ ᴅᴀᴛᴀ ʙᴀsᴇ : <a href='https://www.mongodb.com/'>ᴍᴏɴɢᴏ ᴅʙ</a> 
-‣ ʙᴜɪʟᴅ sᴛᴀᴛᴜs : ᴠ2.7.1 [sᴛᴀʙʟᴇ]></b>"""
-
-    CLONE_TXT = """<b>🌟 <u>CLONE MODE</u>
-
-- Yᴏᴜ Cʀᴇᴀᴛᴇ Yᴏᴜʀ Oᴡɴ Cʟᴏɴᴇ Bᴏᴛ Bʏ /clone Cᴏᴍᴍᴀɴᴅ 
-- Yᴏᴜ Cᴀɴ Bʀᴏᴀᴅᴄᴀsᴛ Iɴ Yᴏᴜʀ Cʟᴏɴᴇ Bᴏᴛs
-- Aɴᴅ Mɪʟʟɪᴏɴ Oғ Fɪʟᴇs Iɴᴅᴇx Aʟʀᴇᴀᴅʏ Nᴏ Nᴇᴇᴅ Tᴏ Aᴅᴅ Aɴʏ Fɪʟᴇ
-
-👨‍💻 Cᴏᴍᴍᴀɴᴅ : /clone</b>"""
-
-    SUBSCRIPTION_TXT = """
-<b>ʀᴇғᴇʀʀᴇ ʏᴏᴜʀ ʟɪɴᴋ ᴛᴏ ʏᴏᴜʀ ғʀɪᴇɴᴅs, ғᴀᴍɪʟʏ, ᴄʜᴀɴɴᴇʟ ᴀɴᴅ ɢʀᴏᴜᴘ ᴛᴏ ɢᴇᴛ ғʀᴇᴇ ᴘʀᴇᴍɪᴜᴍ ғᴏʀ {}
-
-ʀᴇғᴇʀᴀʟ ʟɪɴᴋ - https://telegram.me/{}?start=TGB-{}
-
-ɪғ {} ᴜɴɪǫᴜᴇ ᴜsᴇʀ sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ ᴡɪᴛʜ ʏᴏᴜʀ ʀᴇғᴇʀᴀʟ ʟɪɴᴋ ᴛʜᴇɴ ʏᴏᴜ ᴡɪʟʟ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴀᴅᴅᴇᴅ ɪɴ ᴘʀᴇᴍɪᴜᴍ ʟɪsᴛ.
-
-ʙᴜʏ ᴘᴀɪᴅ ᴘʟᴀɴ ʙʏ - /plan</b>"""
-
-    MANUELFILTER_TXT = """ʜᴇʟᴘ: <b>ꜰɪʟᴛᴇʀꜱ</b>
-- ꜰɪʟᴛᴇʀ ɪꜱ ᴀ ꜰᴇᴀᴛᴜʀᴇ ᴡᴇʀᴇ ᴜꜱᴇʀꜱ ᴄᴀɴ ꜱᴇᴛ ᴀᴜᴛᴏᴍᴀᴛᴇᴅ ʀᴇᴘʟɪᴇꜱ ꜰᴏʀ ᴀ ᴘᴀʀᴛɪᴄᴜʟᴀʀ ᴋᴇʏᴡᴏʀᴅ ᴀɴᴅ ɪ ᴡɪʟʟ ʀᴇꜱᴘᴏɴᴅ ᴡʜᴇɴᴇᴠᴇʀ ᴀ ᴋᴇʏᴡᴏʀᴅ ɪꜱ ꜰᴏᴜɴᴅ ɪɴ ᴛʜᴇ ᴍᴇꜱꜱᴀɢᴇ
-<b>ɴᴏᴛᴇ:</b>
-1. ᴛʜɪꜱ ʙᴏᴛ ꜱʜᴏᴜʟᴅ ʜᴀᴠᴇ ᴀᴅᴍɪɴ ᴘʀɪᴠɪʟᴇɢᴇ.
-2. ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴀᴅᴅ ꜰɪʟᴛᴇʀꜱ ɪɴ ᴀ ᴄʜᴀᴛ.
-3. ᴀʟᴇʀᴛ ʙᴜᴛᴛᴏɴꜱ ʜᴀᴠᴇ ᴀ ʟɪᴍɪᴛ ᴏꜰ 64 ᴄʜᴀʀᴀᴄᴛᴇʀꜱ.
-Cᴏᴍᴍᴀɴᴅs Aɴᴅ Usᴀɢᴇ:
-• /filter - <code>ᴀᴅᴅ ᴀ ꜰɪʟᴛᴇʀ ɪɴ ᴀ ᴄʜᴀᴛ</code>
-• /filters - <code>ʟɪꜱᴛ ᴀʟʟ ᴛʜᴇ ꜰɪʟᴛᴇʀꜱ ᴏꜰ ᴀ ᴄʜᴀᴛ</code>
-• /del - <code>ᴅᴇʟᴇᴛᴇ ᴀ ꜱᴘᴇᴄɪꜰɪᴄ ꜰɪʟᴛᴇʀ ɪɴ ᴀ ᴄʜᴀᴛ</code>
-• /delall - <code>ᴅᴇʟᴇᴛᴇ ᴛʜᴇ ᴡʜᴏʟᴇ ꜰɪʟᴛᴇʀꜱ ɪɴ ᴀ ᴄʜᴀᴛ (ᴄʜᴀᴛ ᴏᴡɴᴇʀ ᴏɴʟʏ)</code>"""
-
-    # Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
-
-    BUTTON_TXT = """ʜᴇʟᴘ: <b>ʙᴜᴛᴛᴏɴꜱ</b>
-- ᴛʜɪꜱ ʙᴏᴛ ꜱᴜᴘᴘᴏʀᴛꜱ ʙᴏᴛʜ ᴜʀʟ ᴀɴᴅ ᴀʟᴇʀᴛ ɪɴʟɪɴᴇ ʙᴜᴛᴛᴏɴꜱ.
-<b>ɴᴏᴛᴇ:</b>
-1. ᴛᴇʟᴇɢʀᴀᴍ ᴡɪʟʟ ɴᴏᴛ ᴀʟʟᴏᴡꜱ ʏᴏᴜ ᴛᴏ ꜱᴇɴᴅ ʙᴜᴛᴛᴏɴꜱ ᴡɪᴛʜᴏᴜᴛ ᴀɴʏ ᴄᴏɴᴛᴇɴᴛ, ꜱᴏ ᴄᴏɴᴛᴇɴᴛ ɪꜱ ᴍᴀɴᴅᴀᴛᴏʀʏ.
-2. ᴛʜɪꜱ ʙᴏᴛ ꜱᴜᴘᴘᴏʀᴛꜱ ʙᴜᴛᴛᴏɴꜱ ᴡɪᴛʜ ᴀɴʏ ᴛᴇʟᴇɢʀᴀᴍ ᴍᴇᴅɪᴀ ᴛʏᴘᴇ.
-3. ʙᴜᴛᴛᴏɴꜱ ꜱʜᴏᴜʟᴅ ʙᴇ ᴘʀᴏᴘᴇʀʟʏ ᴘᴀʀꜱᴇᴅ ᴀꜱ ᴍᴀʀᴋᴅᴏᴡɴ ꜰᴏʀᴍᴀᴛ
-<b>ᴜʀʟ ʙᴜᴛᴛᴏɴꜱ:</b>
-<code>[Button Text](buttonurl:https://t.me/TGBoxOffice/3)</code>
-<b>ᴀʟᴇʀᴛ ʙᴜᴛᴛᴏɴꜱ:</b>
-<code>[Button Text](buttonalert:ᴛʜɪꜱ ɪꜱ ᴀɴ ᴀʟᴇʀᴛ ᴍᴇꜱꜱᴀɢᴇ)</code>"""
-
-    AUTOFILTER_TXT = """ʜᴇʟᴘ: <b>ᴀᴜᴛᴏ ꜰɪʟᴛᴇʀ</b>
-<b>ɴᴏᴛᴇ: Fɪʟᴇ Iɴᴅᴇx</b>
-1. ᴍᴀᴋᴇ ᴍᴇ ᴛʜᴇ ᴀᴅᴍɪɴ ᴏꜰ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ɪꜰ ɪᴛ'ꜱ ᴘʀɪᴠᴀᴛᴇ.
-2. ᴍᴀᴋᴇ ꜱᴜʀᴇ ᴛʜᴀᴛ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴅᴏᴇꜱ ɴᴏᴛ ᴄᴏɴᴛᴀɪɴꜱ ᴄᴀᴍʀɪᴘꜱ, ᴘᴏʀɴ ᴀɴᴅ ꜰᴀᴋᴇ ꜰɪʟᴇꜱ.
-3. ꜰᴏʀᴡᴀʀᴅ ᴛʜᴇ ʟᴀꜱᴛ ᴍᴇꜱꜱᴀɢᴇ ᴛᴏ ᴍᴇ ᴡɪᴛʜ Qᴜᴏᴛᴇꜱ. ɪ'ʟʟ ᴀᴅᴅ ᴀʟʟ ᴛʜᴇ ꜰɪʟᴇꜱ ɪɴ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴍʏ ᴅʙ.
-
-<b>Nᴏᴛᴇ: AᴜᴛᴏFɪʟᴛᴇʀ</b>
-1. Aᴅᴅ ᴛʜᴇ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ᴏɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ.
-2. Usᴇ /connect ᴀɴᴅ ᴄᴏɴɴᴇᴄᴛ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴛᴏ ᴛʜᴇ ʙᴏᴛ.
-3. Usᴇ /settings ᴏɴ ʙᴏᴛ's PM ᴀɴᴅ ᴛᴜʀɴ ᴏɴ AᴜᴛᴏFɪʟᴛᴇʀ ᴏɴ ᴛʜᴇ sᴇᴛᴛɪɴɢs ᴍᴇɴᴜ."""
-
-    CONNECTION_TXT = """ʜᴇʟᴘ: <b>ᴄᴏɴɴᴇᴄᴛɪᴏɴꜱ</b>
-- ᴜꜱᴇᴅ ᴛᴏ ᴄᴏɴɴᴇᴄᴛ ʙᴏᴛ ᴛᴏ ᴘᴍ ꜰᴏʀ ᴍᴀɴᴀɢɪɴɢ ꜰɪʟᴛᴇʀꜱ 
-- ɪᴛ ʜᴇʟᴘꜱ ᴛᴏ ᴀᴠᴏɪᴅ ꜱᴘᴀᴍᴍɪɴɢ ɪɴ ɢʀᴏᴜᴘꜱ.
-<b>ɴᴏᴛᴇ:</b>
-1. ᴏɴʟʏ ᴀᴅᴍɪɴꜱ ᴄᴀɴ ᴀᴅᴅ ᴀ ᴄᴏɴɴᴇᴄᴛɪᴏɴ.
-2. ꜱᴇɴᴅ <code>/ᴄᴏɴɴᴇᴄᴛ</code> ꜰᴏʀ ᴄᴏɴɴᴇᴄᴛɪɴɢ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ᴘᴍ
-Cᴏᴍᴍᴀɴᴅs Aɴᴅ Usᴀɢᴇ:
-• /connect  - <code>ᴄᴏɴɴᴇᴄᴛ ᴀ ᴘᴀʀᴛɪᴄᴜʟᴀʀ ᴄʜᴀᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴍ</code>
-• /disconnect  - <code>ᴅɪꜱᴄᴏɴɴᴇᴄᴛ ꜰʀᴏᴍ ᴀ ᴄʜᴀᴛ</code>
-• /connections - <code>ʟɪꜱᴛ ᴀʟʟ ʏᴏᴜʀ ᴄᴏɴɴᴇᴄᴛɪᴏɴꜱ</code>"""
-
-    # Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
-
-    EXTRAMOD_TXT = """ʜᴇʟᴘ: Exᴛʀᴀ Mᴏᴅᴜʟᴇs
-<b>ɴᴏᴛᴇ:</b>
- <b>✯ Maintained by : <a href={}>Owner</a></b>
-  
- <b>✯ Join here : <a href={}>Update Channel</a></b> 
-  
- ./id - <code>ɢᴇᴛ ɪᴅ ᴏꜰ ᴀ ꜱᴘᴇᴄɪꜰɪᴇᴅ ᴜꜱᴇʀ.</ 
- code> 
-  
- ./info  - <code>ɢᴇᴛ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ ᴀʙᴏᴜᴛ ᴀ ᴜꜱᴇʀ.</code> 
-  
- ./song - Download any song [<code>example /song vaa vaathi song</code>] 
-  
- ./telegraph - <code>Telegraph generator sen under 5MB video or photo I give telegraph link</code> 
-  
- ./tts - <code>This command usage text to voice converter</code> 
-  
- ./video - This command usage any YouTube video download hd [<code>example /video https://youtu.be/example...</code>]
-
-./font - This command usage stylish and cool font generator [<code>example /font hi</code>]"""
-
-
-    ADMIN_TXT = """ʜᴇʟᴘ: Aᴅᴍɪɴ Mᴏᴅs
-<b>ɴᴏᴛᴇ:</b>
-Tʜɪs Mᴏᴅᴜʟᴇ Oɴʟʏ Wᴏʀᴋs Fᴏʀ Mʏ Aᴅᴍɪɴs
-Cᴏᴍᴍᴀɴᴅs Aɴᴅ Usᴀɢᴇ:
-• /logs - <code>ᴛᴏ ɢᴇᴛ ᴛʜᴇ ʀᴇᴄᴇɴᴛ ᴇʀʀᴏʀꜱ</code>
-• /stats - <code>ᴛᴏ ɢᴇᴛ ꜱᴛᴀᴛᴜꜱ ᴏꜰ ꜰɪʟᴇꜱ ɪɴ ᴅʙ. [Tʜɪs Cᴏᴍᴍᴀɴᴅ Cᴀɴ Bᴇ Usᴇᴅ Bʏ Aɴʏᴏɴᴇ]</code>
-• /delete - <code>ᴛᴏ ᴅᴇʟᴇᴛᴇ ᴀ ꜱᴘᴇᴄɪꜰɪᴄ ꜰɪʟᴇ ꜰʀᴏᴍ ᴅʙ.</code>
-• /users - <code>ᴛᴏ ɢᴇᴛ ʟɪꜱᴛ ᴏꜰ ᴍʏ ᴜꜱᴇʀꜱ ᴀɴᴅ ɪᴅꜱ.</code>
-• /chats - <code>ᴛᴏ ɢᴇᴛ ʟɪꜱᴛ ᴏꜰ ᴍʏ ᴄʜᴀᴛꜱ ᴀɴᴅ ɪᴅꜱ</code>
-• /leave  - <code>ᴛᴏ ʟᴇᴀᴠᴇ ꜰʀᴏᴍ ᴀ ᴄʜᴀᴛ.</code>
-• /disable  -  <code>ᴛᴏ ᴅɪꜱᴀʙʟᴇ ᴀ ᴄʜᴀᴛ.</code>
-• /ban  - <code>ᴛᴏ ʙᴀɴ ᴀ ᴜꜱᴇʀ.</code>
-• /unban  - <code>ᴛᴏ ᴜɴʙᴀɴ ᴀ ᴜꜱᴇʀ.</code>
-• /channel - <code>ᴛᴏ ɢᴇᴛ ʟɪꜱᴛ ᴏꜰ ᴛᴏᴛᴀʟ ᴄᴏɴɴᴇᴄᴛᴇᴅ ᴄʜᴀɴɴᴇʟꜱ</code>
-• /broadcast - <code>ᴛᴏ ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴀ ᴍᴇꜱꜱᴀɢᴇ ᴛᴏ ᴀʟʟ ᴜꜱᴇʀꜱ</code>
-• /grp_broadcast - <code>Tᴏ ʙʀᴏᴀᴅᴄᴀsᴛ ᴀ ᴍᴇssᴀɢᴇ ᴛᴏ ᴀʟʟ ᴄᴏɴɴᴇᴄᴛᴇᴅ ɢʀᴏᴜᴘs.</code>
-• /gfilter - <code>ᴛᴏ ᴀᴅᴅ ɢʟᴏʙᴀʟ ғɪʟᴛᴇʀs</code>
-• /gfilters - <code>ᴛᴏ ᴠɪᴇᴡ ʟɪsᴛ ᴏғ ᴀʟʟ ɢʟᴏʙᴀʟ ғɪʟᴛᴇʀs</code>
-• /delg - <code>ᴛᴏ ᴅᴇʟᴇᴛᴇ ᴀ sᴘᴇᴄɪғɪᴄ ɢʟᴏʙᴀʟ ғɪʟᴛᴇʀ</code>
-• /request - <code>Tᴏ sᴇɴᴅ ᴀ Mᴏᴠɪᴇ/Sᴇʀɪᴇs ʀᴇᴏ̨ᴜᴇsᴛ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴs. Oɴʟʏ ᴡᴏʀᴋs ᴏɴ sᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ. [Tʜɪs Cᴏᴍᴍᴀɴᴅ Cᴀɴ Bᴇ Usᴇᴅ Bʏ Aɴʏᴏɴᴇ]</code>
-• /delallg - <code>Tᴏ ᴅᴇʟᴇᴛᴇ ᴀʟʟ Gғɪʟᴛᴇʀs ғʀᴏᴍ ᴛʜᴇ ʙᴏᴛ's ᴅᴀᴛᴀʙᴀsᴇ.</code>
-• /deletefiles - <code>Tᴏ ᴅᴇʟᴇᴛᴇ CᴀᴍRɪᴘ ᴀɴᴅ PʀᴇDVD Fɪʟᴇs ғʀᴏᴍ ᴛʜᴇ ʙᴏᴛ's ᴅᴀᴛᴀʙᴀsᴇ.</code>"""
-
-    SEC_STATUS_TXT = """<b><blockquote>★ Tᴏᴛᴀʟ Usᴇʀs: <code>{}</code>
-★ Tᴏᴛᴀʟ Cʜᴀᴛs: <code>{}</code>
-★ Tᴏᴛᴀʟ Fɪʟᴇs: <code>{}</code>
-★ Usᴇᴅ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code>
-★ Fʀᴇᴇ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code></blockquote></b>"""
-    
-    STATUS_TXT = """<b>Total Files From All DBs: <code>{}</code>
-
-<blockquote>USERS DB :-
-★ Tᴏᴛᴀʟ Usᴇʀs: <code>{}</code>
-★ Tᴏᴛᴀʟ Cʜᴀᴛs: <code>{}</code></blockquote>
-
-<blockquote>FILE FIRST DB :-
-★ Tᴏᴛᴀʟ Fɪʟᴇs: <code>{}</code>
-★ Usᴇᴅ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code>
-★ Fʀᴇᴇ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code></blockquote>
-
-<blockquote>FILE SECOND DB :-
-★ Tᴏᴛᴀʟ Fɪʟᴇs: <code>{}</code>
-★ Usᴇᴅ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code>
-★ Fʀᴇᴇ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code></blockquote>
-
-<blockquote>OTHER DB :-
-★ Usᴇᴅ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code>
-★ Fʀᴇᴇ Sᴛᴏʀᴀɢᴇ: <code>{} MB</code></blockquote></b>"""
-    
-    LOG_TEXT_G = """#NewGroup
-Gʀᴏᴜᴘ = {}(<code>{}</code>)
-Tᴏᴛᴀʟ Mᴇᴍʙᴇʀs = <code>{}</code>
-Aᴅᴅᴇᴅ Bʏ - {}"""
-
-    LOG_TEXT_P = """#NewUser
+    LOG_TEXT_P = """#NewUser • MoviesZoneFlix
 ID - <code>{}</code>
-Nᴀᴍᴇ - {}"""
+Name - {}"""
 
-    ALRT_TXT = """ʜᴇʟʟᴏ {},
-ᴛʜɪꜱ ɪꜱ ɴᴏᴛ ʏᴏᴜʀ ᴍᴏᴠɪᴇ ʀᴇQᴜᴇꜱᴛ,
-ʀᴇQᴜᴇꜱᴛ ʏᴏᴜʀ'ꜱ..."""
+    ALRT_TXT = """Hello {},
+This is not your movie request!
+Please search for your own movie in the group."""
 
-    OLD_ALRT_TXT = """ʜᴇʏ {},
-ʏᴏᴜ ᴀʀᴇ ᴜꜱɪɴɢ ᴏɴᴇ ᴏꜰ ᴍʏ ᴏʟᴅ ᴍᴇꜱꜱᴀɢᴇꜱ, 
-ᴘʟᴇᴀꜱᴇ ꜱᴇɴᴅ ᴛʜᴇ ʀᴇQᴜᴇꜱᴛ ᴀɢᴀɪɴ."""
+    OLD_ALRT_TXT = """Hey {},
+You are clicking an expired result message.
+Please send your movie request again."""
 
-    CUDNT_FND = """ɪ ᴄᴏᴜʟᴅɴ'ᴛ ꜰɪɴᴅ ᴀɴʏᴛʜɪɴɢ ʀᴇʟᴀᴛᴇᴅ ᴛᴏ {}
-ᴅɪᴅ ʏᴏᴜ ᴍᴇᴀɴ ᴀɴʏ ᴏɴᴇ ᴏꜰ ᴛʜᴇꜱᴇ?"""
+    CUDNT_FND = """<b>🔍 Couldn't find exact matches for <code>{}</code>.
+Did you mean one of these titles below?</b>"""
 
-    I_CUDNT = """<b>sᴏʀʀʏ ɴᴏ ꜰɪʟᴇs ᴡᴇʀᴇ ꜰᴏᴜɴᴅ ꜰᴏʀ ʏᴏᴜʀ ʀᴇǫᴜᴇꜱᴛ {} 😕
+    I_CUDNT = """<b>⚠️ No files found for your request: <code>{}</code>
 
-ᴄʜᴇᴄᴋ ʏᴏᴜʀ sᴘᴇʟʟɪɴɢ ɪɴ ɢᴏᴏɢʟᴇ ᴀɴᴅ ᴛʀʏ ᴀɢᴀɪɴ 😃
+Please verify the spelling on Google or IMDb and try again.
 
-ᴍᴏᴠɪᴇ ʀᴇǫᴜᴇꜱᴛ ꜰᴏʀᴍᴀᴛ 👇
+<blockquote>🎬 <b>Movie Format:</b> <code>Salaar</code> or <code>Hushaaru 2018</code>
+📺 <b>Series Format:</b> <code>Loki S01</code> or <code>Loki S01E04</code></blockquote></b>"""
 
-ᴇxᴀᴍᴘʟᴇ : Uncharted or Uncharted 2022 or Uncharted En
+    I_CUD_NT = """Couldn't find any movie related to {}.
+Please check the spelling on Google or IMDb."""
 
-ꜱᴇʀɪᴇꜱ ʀᴇǫᴜᴇꜱᴛ ꜰᴏʀᴍᴀᴛ 👇
+    MVE_NT_FND = """⚠️ Movie not found in the MoviesZoneFlix database."""
 
-ᴇxᴀᴍᴘʟᴇ : Loki S01 or Loki S01E04 or Lucifer S03E24
+    TOP_ALRT_MSG = """🔍 Searching MoviesZoneFlix Database..."""
 
-🚯 ᴅᴏɴᴛ ᴜꜱᴇ ➠ ':(!,./)</b>"""
+    MELCOW_ENG = """<b><blockquote>✦ 𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𝗧𝗢 {} ✦</blockquote>
 
-    I_CUD_NT = """ɪ ᴄᴏᴜʟᴅɴ'ᴛ ꜰɪɴᴅ ᴀɴʏ ᴍᴏᴠɪᴇ ʀᴇʟᴀᴛᴇᴅ ᴛᴏ {}.
-ᴘʟᴇᴀꜱᴇ ᴄʜᴇᴄᴋ ᴛʜᴇ ꜱᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ ᴏʀ ɪᴍᴅʙ..."""
+👋 Hello {}, welcome to our community! Type any movie or series name to search instant files with <b>MoviesZoneFlix</b>. ❤️</b>"""
 
-    MVE_NT_FND = """ᴍᴏᴠɪᴇ ɴᴏᴛ ꜰᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀꜱᴇ..."""
+    SHORTLINK_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗘𝗔𝗥𝗡 𝗠𝗢𝗡𝗘𝗬 ✦</blockquote>
 
-    TOP_ALRT_MSG = """Cʜᴇᴄᴋɪɴɢ Fᴏʀ Mᴏᴠɪᴇ Iɴ Dᴀᴛᴀʙᴀsᴇ..."""
+💰 Select your language below to learn how to connect your shortener in your group and earn:</b>"""
 
-    MELCOW_ENG = """<b>Hᴇʟʟᴏ {} 😍, Aɴᴅ Wᴇʟᴄᴏᴍᴇ Tᴏ {} Gʀᴏᴜᴘ ❤️</b>"""
+    REQINFO = """⚠ MoviesZoneFlix Info ⚠
 
-    SHORTLINK_INFO = """
+This result message auto-deletes after 5 minutes to keep the chat clean.
+Use the NEXT button if your file is on the next page."""
 
-🫵 Select Your Language And Earn Money 💰"""
+    SELECT = """Select your preferred Language, Quality, Season, or Episode below."""
 
-    REQINFO = """
-⚠ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ ⚠
+    SINFO = """Join the required update channel first, then click Try Again."""
 
-ᴀꜰᴛᴇʀ 5 ᴍɪɴᴜᴛᴇꜱ ᴛʜɪꜱ ᴍᴇꜱꜱᴀɢᴇ ᴡɪʟʟ ʙᴇ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴅᴇʟᴇᴛᴇᴅ
+    NORSLTS = """★ #NoResults • MoviesZoneFlix ★
 
-ɪꜰ ʏᴏᴜ ᴅᴏ ɴᴏᴛ ꜱᴇᴇ ᴛʜᴇ ʀᴇǫᴜᴇsᴛᴇᴅ ᴍᴏᴠɪᴇ / sᴇʀɪᴇs ꜰɪʟᴇ, ʟᴏᴏᴋ ᴀᴛ ᴛʜᴇ ɴᴇxᴛ ᴘᴀɢᴇ"""
+ID : <code>{}</code>
+Name : {}
+Query : <code>{}</code>"""
 
-    SELECT = """sᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴘʀᴇғᴇʀʀᴇᴅ ʟᴀɴɢᴜᴀɢᴇ, ǫᴜᴀʟɪᴛʏ, sᴇᴀsᴏɴ ᴀɴᴅ ᴇᴘɪsᴏᴅᴇ"""
+    CAPTION = """<b>🎬 <b>MoviesZoneFlix</b>
+📂 File: <code>{file_name}</code>
+💾 Size: <code>{file_size}</code></b>"""
 
-    SINFO = """
-🫣 For Movie Join First Then Click On Try Again Button 😅"""
+    IMDB_TEMPLATE_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗘𝗔𝗥𝗖𝗛 𝗥𝗘𝗦𝗨𝗟𝗧𝗦 ✦</blockquote>
 
-    NORSLTS = """ 
-★ #𝗡𝗼𝗥𝗲𝘀𝘂𝗹𝘁𝘀 ★
+🔎 <b>Query:</b> <code>{qurey}</code>
+{support}
 
-𝗜𝗗 <b>: {}</b>
+<blockquote>🎬 <b>Title:</b> <a href={url}>{title}</a> ({year})
+🎭 <b>Genres:</b> {genres}
+🌟 <b>Rating:</b> <a href={url}/ratings>{rating}</a> / 10 ({votes} votes)
+🌐 <b>Languages:</b> <code>{languages}</code>
+⏱ <b>Runtime:</b> {runtime} mins
+📅 <b>Release:</b> {release_date}</blockquote>
 
-𝗡𝗮𝗺𝗲 <b>: {}</b>
-
-𝗠𝗲𝘀𝘀𝗮𝗴𝗲 <b>: {}</b>"""
-
-    CAPTION = """<b>📂 ғɪʟᴇɴᴀᴍᴇ : {file_name}
-
-<b>⚙️ sɪᴢᴇ : {file_size}</b>""" 
-
-    IMDB_TEMPLATE_TXT = """
-<b>Query: {qurey}
-
-IMDb Data:
-
-<blockquote>🏷 Title: <a href={url}>{title}</a>
-🎭 Genres: {genres}
-📆 Year: <a href={url}/releaseinfo>{year}</a>
-🌟 Rating: <a href={url}/ratings>{rating}</a> / 10 (based on {votes} user ratings.)
-☀️ Languages : <code>{languages}</code>
-📀 RunTime: {runtime} Minutes
-📆 Release Info : {release_date}
-🎛 Countries : <code>{countries}</code></blockquote>
-
-⏰ Result Shown in: {remaining_seconds} <i>seconds</i> 🔥
-
-Requested by : {message.from_user.mention}</b>"""
+⚡ <b>Fetched in:</b> <code>{remaining_seconds}s</code>
+👤 <b>Requested by:</b> {message.from_user.mention}</b>"""
     
-    ALL_FILTERS = """
-<b>Hᴇʏ {}, Tʜᴇsᴇ ᴀʀᴇ ᴍʏ ᴛʜʀᴇᴇ ᴛʏᴘᴇs ᴏғ ғɪʟᴛᴇʀs.</b>"""
+    ALL_FILTERS = """<b>👋 Hey {}, choose a filter type below to view its setup guide:</b>"""
     
-    GFILTER_TXT = """
-<b>Wᴇʟᴄᴏᴍᴇ ᴛᴏ Gʟᴏʙᴀʟ Fɪʟᴛᴇʀs. Gʟᴏʙᴀʟ Fɪʟᴛᴇʀs ᴀʀᴇ ᴛʜᴇ ғɪʟᴛᴇʀs sᴇᴛ ʙʏ ʙᴏᴛ ᴀᴅᴍɪɴs ᴡʜɪᴄʜ ᴡɪʟʟ ᴡᴏʀᴋ ᴏɴ ᴀʟʟ ɢʀᴏᴜᴘs.</b>
-    
-Aᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs:
-• /gfilter - <code>Tᴏ ᴄʀᴇᴀᴛᴇ ᴀ ɢʟᴏʙᴀʟ ғɪʟᴛᴇʀ.</code>
-• /gfilters - <code>Tᴏ ᴠɪᴇᴡ ᴀʟʟ ɢʟᴏʙᴀʟ ғɪʟᴛᴇʀs.</code>
-• /delg - <code>Tᴏ ᴅᴇʟᴇᴛᴇ ᴀ ᴘᴀʀᴛɪᴄᴜʟᴀʀ ɢʟᴏʙᴀʟ ғɪʟᴛᴇʀ.</code>
-• /delallg - <code>ᴛᴏ ᴅᴇʟᴇᴛᴇ ᴀʟʟ ɢʟᴏʙᴀʟ ꜰɪʟᴛᴇʀꜱ.</code>"""
-    
-    FILE_STORE_TXT = """
-<b>Fɪʟᴇ sᴛᴏʀᴇ ɪs ᴛʜᴇ ғᴇᴀᴛᴜʀᴇ ᴡʜɪᴄʜ ᴡɪʟʟ ᴄʀᴇᴀᴛᴇ ᴀ sʜᴀʀᴇᴀʙʟᴇ ʟɪɴᴋ ᴏғ ᴀ sɪɴɢʟᴇ ᴏʀ ᴍᴜʟᴛɪᴘʟᴇ ғɪʟᴇs.</b>
+    GFILTER_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗚𝗟𝗢𝗕𝗔𝗟 𝗙𝗜𝗟𝗧𝗘𝗥𝗦 ✦</blockquote>
 
-Aᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs:
-• /batch - <code>Tᴏ ᴄʀᴇᴀᴛᴇ ᴀ ʙᴀᴛᴄʜ ʟɪɴᴋ ᴏғ ᴍᴜʟᴛɪᴘʟᴇ ғɪʟᴇs.</code>
-• /link - <code>Tᴏ ᴄʀᴇᴀᴛᴇ ᴀ sɪɴɢʟᴇ ғɪʟᴇ sᴛᴏʀᴇ ʟɪɴᴋ.</code>
-• /pbatch - <code>Jᴜsᴛ ʟɪᴋᴇ /batch, ʙᴜᴛ ᴛʜᴇ ғɪʟᴇs ᴡɪʟʟ ʙᴇ sᴇɴᴅ ᴡɪᴛʜ ғᴏʀᴡᴀʀᴅ ʀᴇsᴛʀɪᴄᴛɪᴏɴs.</code>
-• /plink - <code>Jᴜsᴛ ʟɪᴋᴇ /link, ʙᴜᴛ ᴛʜᴇ ғɪʟᴇ ᴡɪʟʟ ʙᴇ sᴇɴᴅ ᴡɪᴛʜ ғᴏʀᴡᴀʀᴅ ʀᴇsᴛʀɪᴄᴛɪᴏɴ.</code>"""
+Global Filters are set by bot admins and work across all connected groups.
 
-    SONG_TXT = """<b>ꜱᴏɴɢ ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴏᴅᴜʟᴇ</b> 
-      
- <b>ꜱᴏɴɢ ᴅᴏᴡɴʟᴏᴀᴅ ᴍᴏᴅᴜʟᴇ, ꜰᴏʀ ᴛʜᴏꜱᴇ ᴡʜᴏ ʟᴏᴠᴇ ᴍᴜꜱɪᴄ. yᴏᴜ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ ꜰᴇᴀᴛᴜᴇ ꜰᴏʀ ᴅᴏᴡɴʟᴏᴀᴅ ᴀɴy ꜱᴏɴɢ ᴡɪᴛʜ ꜱᴜᴩᴇʀ ꜰᴀꜱᴛ ꜱᴩᴇᴇᴅ. ᴡᴏʀᴋꜱ ʙᴏᴛ ᴀɴᴅ ɢʀᴏᴜᴩꜱ ᴏɴʟy...</b> 
+<b>Commands:</b>
+• <code>/gfilter</code> — Create a global filter
+• <code>/gfilters</code> — View all global filters
+• <code>/delg</code> — Delete a specific global filter
+• <code>/delallg</code> — Delete all global filters</b>"""
+    
+    FILE_STORE_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗙𝗜𝗟𝗘 𝗦𝗧𝗢𝗥𝗘 ✦</blockquote>
+
+Generate shareable links for single or batch files.
+
+<b>Commands:</b>
+• <code>/link</code> — Create a single file share link
+• <code>/plink</code> — Create a protected single file link
+• <code>/batch</code> — Create a multi-file batch share link
+• <code>/pbatch</code> — Create a protected multi-file batch link</b>"""
+
+    SONG_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗢𝗡𝗚 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥 ✦</blockquote>
+
+Download any song at high speed in groups or PM.
+
+• <b>Command:</b> <code>/song song name</code></b>"""
   
- <b>ᴄᴏᴍᴍᴀɴᴅꜱ</b> :<b> 𝄟⃝.  /song ꜱᴏɴɢ ɴᴀᴍᴇ</b></b>""" 
+    YTDL_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗩𝗜𝗗𝗘𝗢 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥 ✦</blockquote>
+
+Download YouTube videos easily.
+
+• <b>Command:</b> <code>/video https://youtu.be/...</code> or <code>/mp4</code></b>"""
   
-    YTDL_TXT = """<b>ʜᴇʟᴩ yᴏᴜ ᴛᴏ ᴅᴏᴡɴʟᴏᴀᴅ ᴠɪᴅᴇᴏ ꜰʀᴏᴍ yᴏᴜᴛᴜʙᴇ. 
+    TTS_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗧𝗘𝗫𝗧 𝗧𝗢 𝗦𝗣𝗘𝗘𝗖𝗛 ✦</blockquote>
+
+Reply to any text with <code>/tts</code> to convert it into audio speech.</b>"""
   
- ᴜꜱᴀɢᴇ : yᴏᴜ ᴄᴀɴ ᴅᴏᴡɴʟᴏᴀᴅ ᴀɴy ᴠɪᴅᴇᴏ ꜰʀᴏᴍ yᴏᴜᴛᴜʙᴇ 
+    GTRANS_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗧𝗥𝗔𝗡𝗦𝗟𝗔𝗧𝗢𝗥 ✦</blockquote>
+
+Use <code>/tr language_code</code> replying to a message to translate it.</b>"""
   
- ʜᴏᴡ ᴛᴏ ᴜꜱᴇ : ᴛyᴩᴇ - /video ᴏʀ /mp4 
+    TELE_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗧𝗘𝗟𝗘𝗚𝗥𝗔𝗣𝗛 ✦</blockquote>
+
+Send <code>/telegraph</code> replying to a photo or video under 5MB to get a shareable link.</b>"""
   
- ᴇxᴀᴍᴩʟᴇ :<code>/mp4 https://youtu.be/example...</code></b>""" 
-  
-    TTS_TXT = """<b>ᴛᴛꜱ 🎤 ᴍᴏᴅᴜʟᴇ : ᴛʀᴀɴꜱʟᴀᴛᴇ ᴛᴇxᴛ ᴛᴏ ꜱᴩᴇᴇᴄʜ 
-  
- ᴄᴏᴍᴍᴀɴᴅꜱ ᴀɴᴅ ᴜꜱᴀɢᴇ : /tts</b>""" 
-  
-    GTRANS_TXT = """<b>ʜᴇʟᴩ:ɢᴏᴏɢʟᴇ ᴛʀᴀɴꜱʟᴀᴛᴇʀ 
-  
- ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ʜᴇʟᴩꜱ yᴏᴜ ᴛᴏ ᴛʀᴀɴꜱʟᴀᴛᴇ ᴀ ᴛᴇxᴛ ᴛᴏ ᴀɴy ʟᴀɴɢᴜᴀɢᴇꜱ yᴏᴜ ᴡᴀɴᴛ. ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴡᴏʀᴋꜱ ᴏɴ ʙᴏᴛʜ ᴩᴍ ᴀɴᴅ ɢʀᴏᴜᴏ  
-  
- ᴄᴏᴍᴍᴀɴᴅꜱ ᴀɴᴅ ᴜꜱᴀɢᴇ : /tr - ᴛᴏ ᴛʀᴀɴꜱʟᴀᴛᴇʀ ᴛᴇxᴛꜱ ᴛᴏ ᴀ ꜱᴩᴇᴄɪꜰᴄ ʟᴀɴɢᴜᴀɢᴇ 
-  
- ɴᴏᴛᴇ: ᴡʜɪʟᴇ ᴜꜱɪɴɢ /tr yᴏᴜ ꜱʜᴏᴜʟᴅ ꜱᴩᴇᴄɪꜰy ᴛʜᴇ ʟᴀɴɢᴜᴀɢᴇ ᴄᴏᴅᴇ 
-  
- ᴇxᴀᴍᴩʟᴇ: /𝗍𝗋 ᴍʟ 
- • ᴇɴ = ᴇɴɢʟɪꜱʜ 
- • ᴍʟ = ᴍᴀʟᴀyᴀʟᴀᴍ 
- • ʜɪ = ʜɪɴᴅɪ</b>""" 
-  
-    TELE_TXT = """<b>ʜᴇʟᴘ: ᴛᴇʟᴇɢʀᴀᴘʜ ᴅᴏ ᴀꜱ ʏᴏᴜ ᴡɪꜱʜ ᴡɪᴛʜ ᴛᴇʟᴇɢʀᴀ.ᴘʜ ᴍᴏᴅᴜʟᴇ! 
-  
- ᴜꜱᴀɢᴇ: /telegraph - ꜱᴇɴᴅ ᴍᴇ ᴘɪᴄᴛᴜʀᴇ ᴏʀ ᴠɪᴅᴇ ᴜɴᴅᴇʀ (5ᴍʙ) 
-  
- ɴᴏᴛᴇ: 
- ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ɪꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ɪɴ ɢᴏᴜᴘꜱ ᴀɴᴅ ᴘᴍꜱ 
- ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴄᴀɴ ʙᴇ ᴜꜱᴇᴅ ʙʏ ᴇᴠᴇʀʏᴏɴᴇ</b>""" 
-  
-    CORONA_TXT = """<b>ʜᴇʟᴩ: ᴄᴏᴠɪᴅ 
-  
- ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ʜᴇʟᴩꜱ yᴏᴜ ᴛᴏ ᴋɴᴏᴡ ᴅᴀɪʟy ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ ᴀʙᴏᴜᴛ ᴄᴏᴠɪᴅ 
-  
- ᴄᴏᴍᴍᴀɴᴅꜱ ᴀɴᴅ ᴜꜱᴀɢᴇ: 
-  
- /covid - ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴡɪᴛʜ yᴏᴜʀ ᴄᴏᴜɴᴛʀy ɴᴀᴍᴇ ᴛᴏ ɢᴇᴛ ᴄᴏᴠɪᴅᴇ ɪɴꜰᴏʀᴍᴀᴛɪᴏɴ 
- ᴇxᴀᴍᴩʟᴇ:<code>/covid 𝖨𝗇𝖽𝗂𝖺</code> 
-  
- ⚠️ ᴛʜɪꜱ ꜱᴇʀᴠɪᴄᴇ ʜᴀꜱ ʙᴇᴇɴ ꜱᴛᴏᴩᴩᴇᴅ 
-  
- </b>""" 
+    CORONA_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 ✦</blockquote></b>"""
 
     PROGRESS_BAR = """\n
-╭━━━━❰ File Is Renaming... ❱━➣
+╭━━━━❰ MoviesZoneFlix Processing... ❱━➣
 ┣⪼ 🗂️ : {1} | {2}
 ┣⪼ ⏳️ : {0}%
 ┣⪼ 🚀 : {3}/s
 ┣⪼ ⏱️ : {4}
 ╰━━━━━━━━━━━━━━━➣ """
   
-    ABOOK_TXT = """<b>ʜᴇʟᴩ : ᴀᴜᴅɪᴏʙᴏᴏᴋ 
-  
- yᴏᴜ ᴄᴀɴ ᴄᴏɴᴠᴇʀᴛ ᴀ ᴩᴅꜰ ꜰɪʟᴇ ᴛᴏ ᴀ ᴀᴜᴅɪᴏ ꜰɪʟᴇ ᴡɪᴛʜ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ✯ 
-  
- ᴄᴏᴍᴍᴀɴᴅꜱ ᴀɴᴅ ᴜꜱᴀɢᴇ: 
- /audiobook: ʀᴇᴩʟy ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴛᴏ ᴀɴy ᴩᴅꜰ ᴛᴏ ɢᴇɴᴇʀᴀᴛᴇ ᴛʜᴇ ᴀᴜᴅɪᴏ 
-</b>""" 
-  
- 
-    PINGS_TXT = """<b>ᴘɪɴɢ ᴛᴇꜱᴛɪɴɢ: ʜᴇʟᴘꜱ ʏᴏᴜ ᴛᴏ ᴋɴᴏᴡ ʏᴏᴜʀ ᴘɪɴɢ🪄
+    ABOOK_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗔𝗨𝗗𝗜𝗢𝗕𝗢𝗢𝗞 ✦</blockquote>
 
-<blockquote>ᴄᴏᴍᴍᴀɴᴅꜱ:
-• /alive - ᴛᴏ ᴄʜᴇᴄᴋ ʏᴏᴜ ᴀʀᴇ ᴀʟɪᴠᴇ.
-• /help - ᴛᴏ ɢᴇᴛ ʜᴇʟᴘ.
-• /ping - ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ᴘɪɴɢ.</blockquote>
+Reply <code>/audiobook</code> to any PDF file to convert it to audio.</b>"""
 
-<blockquote>ᴜꜱᴀɢᴇ:
-• ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅꜱ ᴄᴀɴ ʙᴇ ᴜꜱᴇᴅ ɪɴ ᴘᴍ ᴀɴᴅ ɢʀᴏᴜᴘꜱ
-• ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅꜱ ᴄᴀɴ ʙᴇ ᴜꜱᴇᴅ ʙʏ ᴇᴠᴇʀʏᴏɴᴇ ɪɴ ᴛʜᴇ ɢʀᴏᴜᴘꜱ ᴀɴᴅ ʙᴏᴛꜱ ᴘᴍ
-• ꜱʜᴀʀᴇ ᴜꜱ ꜰᴏʀ ᴍᴏʀᴇ ꜰᴇᴀᴛᴜʀᴇꜱ</blockquote></b>"""
-  
-    STICKER_TXT = """<b>yᴏᴜ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ ᴍᴏᴅᴜʟᴇ ᴛᴏ ꜰɪɴᴅᴀɴy  ꜱᴛɪᴄᴋᴇʀꜱ ɪᴅ. 
- • ᴜꜱᴀɢᴇ :ᴛᴏ ɢᴇᴛ ꜱᴛɪᴄᴋᴇʀ 
-   
- ⭕ ʜᴏᴡ ᴛᴏ ᴜꜱᴇ 
- /stickerid
- </b>""" 
-  
-    FONT_TXT= """<b>ᴜꜱᴀɢᴇ 
-  
- yᴏᴜ ᴄᴀɴ ᴜꜱᴇ ᴛʜɪꜱ ᴍᴏᴅᴜʟᴇ ᴛᴏ ᴄʜᴀɴɢᴇ ꜰᴏɴᴛ ꜱᴛyʟᴇ   
-  
- ᴄᴏᴍᴍᴀɴᴅ : /font yᴏᴜʀ ᴛᴇxᴛ (ᴏᴩᴛɪᴏɴᴀʟ) 
- ᴇɢ:- /font ʜᴇʟʟᴏ 
-  
- </b>""" 
-  
-    PURGE_TXT = """<b>ᴘᴜʀɢᴇ 
-      
- ᴅᴇʟᴇᴛᴇ ᴀ ʟᴏᴛ ᴏꜰ ᴍᴇssᴀɢᴇs ꜰʀᴏᴍ ɢʀᴏᴜᴘs!  
-      
-  ᴀᴅᴍɪɴ  
-  
- ◉ /purge :- ᴅᴇʟᴇᴛᴇ ᴀʟʟ ᴍᴇssᴀɢᴇs ꜰʀᴏᴍ ᴛʜᴇ ʀᴇᴘʟɪᴇᴅ ᴛᴏ ᴍᴇssᴀɢᴇ, ᴛᴏ ᴛʜᴇ ᴄᴜʀʀᴇɴᴛ ᴍᴇssᴀɢᴇ</b>""" 
-  
-    WHOIS_TXT = """<b>ᴡʜᴏɪꜱ ᴍᴏᴅᴜʟᴇ 
-  
- ɴᴏᴛᴇ:- ɢɪᴠᴇ ᴀ ᴜꜱᴇʀ ᴅᴇᴛᴀɪʟꜱ 
- /whois :- ɢɪᴠᴇ ᴀ ᴜꜱᴇʀ ꜰᴜʟʟ ᴅᴇᴛᴀɪʟꜱ 📑 
- </b>""" 
-  
-    JSON_TXT = """<b> 
- ᴊsᴏɴ:  
- ʙᴏᴛ ʀᴇᴛᴜʀɴs ᴊsᴏɴ ꜰᴏʀ ᴀʟʟ ʀᴇᴘʟɪᴇᴅ ᴍᴇssᴀɢᴇs ᴡɪᴛʜ /json 
-  
- ꜰᴇᴀᴛᴜʀᴇs: 
-  
- ᴍᴇssᴀɢᴇ ᴇᴅɪᴛᴛɪɴɢ ᴊsᴏɴ 
- ᴘᴍ sᴜᴘᴘᴏʀᴛ 
- ɢʀᴏᴜᴘ sᴜᴘᴘᴏʀᴛ 
-  
- ɴᴏᴛᴇ: 
-  
- ᴇᴠᴇʀʏᴏɴᴇ ᴄᴀɴ ᴜsᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ , ɪꜰ sᴘᴀᴍɪɴɢ ʜᴀᴘᴘᴇɴs ʙᴏᴛ ᴡɪʟʟ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ʙᴀɴ ʏᴏᴜ ꜰʀᴏᴍ ᴛʜᴇ ɢʀᴏᴜᴘ.</b>""" 
-  
-    URLSHORT_TXT = """<b>ʜᴇʟᴩ: ᴜʀʟ ꜱʜᴏʀᴛɴᴇʀ 
-  
- <i><b>𝚃𝚑𝚒𝚜ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ʜᴇʟᴩꜱ yᴏᴜ ᴛᴏ ꜱʜᴏʀᴛ ᴛᴏ ᴜʀʟ </i></b> 
-  
- ᴄᴏᴍᴍᴀɴᴅꜱ ᴀɴᴅ ᴜꜱᴀɢᴇ: 
-  
- /short: <b>ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴡɪᴛʜ yᴏᴜʀ ʟɪɴᴋ ᴛᴏ ɢᴇᴛ ꜱʜᴏʀᴛ ʟɪɴᴋꜱ</b> 
- ᴇxᴀᴍᴩʟᴇ:<code>/short https://youtu.be/example...</code> 
-</b>""" 
-  
-    CARB_TXT = """<b>ʜᴇʟᴩ ꜰᴏʀ ᴄᴀʀʙᴏɴ 
-  
- ᴄᴀʀʙᴏɴ ɪꜱ ᴀ ꜰᴇᴜᴛᴜʀᴇ ᴛᴏ ᴍᴀᴋᴇ ᴛʜᴇ ɪᴍᴀɢᴇ ᴀꜱ ꜱʜᴏᴡɴ ɪɴ ᴛʜᴇ ᴛᴏᴩ ᴡɪᴛʜ ʏᴏᴜʀ ᴛᴇxᴛꜱ. 
- ꜰᴏʀ ᴜꜱɪɴɢ ᴛʜᴇ ᴍᴏᴅᴜʟᴇ ᴊᴜꜱᴛ ꜱᴇɴᴅ ᴛʜᴇ ᴛᴇxᴛ ᴀɴᴅ ᴏᴇᴩʟᴀʏ ᴛɪ ɪᴛ ᴡɪᴛʜ  /carbon ᴄᴏᴍᴍᴀɴᴅ ᴛʜᴇ ʙᴏᴛ ᴡɪʟʟ ᴩᴇᴩᴀʏ ᴡɪᴛʜ ᴛʜᴇ ᴄᴀʀʙᴏɴ ɪᴍᴀɢᴇ 
-</b>""" 
-    GEN_PASS = """<b>Hᴇʟᴘ: Pᴀꜱꜱᴡᴏʀᴅ Gᴇɴᴇʀᴀᴛᴏʀ 
-  
- Tʜᴇʀᴇ Iꜱ Nᴏᴛʜɪɴɢ Tᴏ Kɴᴏᴡ Mᴏʀᴇ. Sᴇɴᴅ Mᴇ Tʜᴇ Lɪᴍɪᴛ Oғ Yᴏᴜʀ Pᴀꜱꜱᴡᴏʀᴅ. 
- - I Wɪʟʟ Gɪᴠᴇ Tʜᴇ Pᴀꜱꜱᴡᴏʀᴅ Oғ Tʜᴀᴛ Lɪᴍɪᴛ. 
-  
- Cᴏᴍᴍᴀɴᴅꜱ ᴀɴᴅ Uꜱᴀɢᴇ: 
- • /genpassword ᴏʀ /genpw 𝟸𝟶 
-  
- NOTE: 
- • Oɴʟʏ Dɪɢɪᴛꜱ Aʀᴇ Aʟʟᴏᴡᴇᴅ 
- • Mᴀxɪᴍᴜᴍ Aʟʟᴏᴡᴇᴅ Dɪɢɪᴛꜱ Tɪʟʟ 𝟾𝟺  
- (I Cᴀɴ'ᴛ Gᴇɴᴇʀᴀᴛᴇ Pᴀꜱꜱᴡᴏʀᴅꜱ Aʙᴏᴠᴇ Tʜᴇ Lᴇɴɢᴛʜ 𝟾𝟺) 
- • IMDʙ ꜱʜᴏᴜʟᴅ ʜᴀᴠᴇ ᴀᴅᴍɪɴ ᴘʀɪᴠɪʟʟᴀɢᴇ. 
- • Tʜᴇꜱᴇ ᴄᴏᴍᴍᴀɴᴅꜱ ᴡᴏʀᴋꜱ ᴏɴ ʙᴏᴛʜ ᴘᴍ ᴀɴᴅ ɢʀᴏᴜᴘ. 
- • Tʜᴇꜱᴇ ᴄᴏᴍᴍᴀɴᴅꜱ ᴄᴀɴ ʙᴇ ᴜꜱᴇᴅ ʙʏ ᴀɴʏ ɢʀᴏᴜᴘ ᴍᴇᴍʙᴇʀ.</b>""" 
-  
-    SHARE_TXT = """<b>Get your text share url. 
-  
- - ᴇx :- /share
-  
- </b>""" 
-  
-    PIN_TXT = """<b>ᴩɪɴ ᴍᴏᴅᴜʟᴇ 
- ᴩɪɴ ᴀ ᴍᴇꜱꜱᴀɢᴇ... 
-  
- ᴀʟʟ ᴛʜᴇ ᴩɪɴ ʀᴇᴩʟᴀᴛᴇᴅ ᴄᴏᴍᴍᴀɴᴅꜱ ᴄᴀɴ ʙᴇ ꜰᴏᴜɴᴅ ʜᴇʀᴇ: 
-  
- 📌ᴄᴏᴍᴍᴀɴᴅꜱ ᴀɴᴅ ᴜꜱᴀɢᴇ📌 
-  
- /pin :- ᴛᴏ ᴩɪɴ ᴛʜᴇ ᴍᴇꜱꜱᴀɢᴇ ᴏɴ ʏᴏᴜʀ ᴄʜᴀᴛꜱ 
- /unpin :- ᴛᴏ ᴜɴᴩɪɴ ᴛʜᴇ ᴄᴜʀʀᴇᴇɴᴛ ᴩɪɴɴᴇᴅ ᴍᴇꜱꜱᴀɢᴇ</b>"""
+    PINGS_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗣𝗜𝗡𝗚 & 𝗦𝗧𝗔𝗧𝗨𝗦 ✦</blockquote>
 
- 
-    RESTART_TXT = """
-<b>Bᴏᴛ Rᴇsᴛᴀʀᴛᴇᴅ !
+• <code>/alive</code> — Check if MoviesZoneFlix is running
+• <code>/ping</code> — Check response latency
+• <code>/help</code> — Open full help menu</b>"""
+  
+    STICKER_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗧𝗜𝗖𝗞𝗘𝗥 𝗜𝗗 ✦</blockquote>
 
-<blockquote>📅 Dᴀᴛᴇ : <code>{}</code>
-⏰ Tɪᴍᴇ : <code>{}</code>
-🌐 Tɪᴍᴇᴢᴏɴᴇ : <code>Asia/Kolkata</code>
-🛠️ Bᴜɪʟᴅ Sᴛᴀᴛᴜs: <code>v2.7.1 [ Sᴛᴀʙʟᴇ ]</code></blockquote></b>"""
+Send <code>/stickerid</code> replying to any sticker to get its Telegram file ID.</b>"""
+  
+    FONT_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗙𝗢𝗡𝗧 𝗦𝗧𝗬𝗟𝗘𝗥 ✦</blockquote>
+
+Use <code>/font your text</code> to transform text into stylish Unicode fonts.</b>"""
+  
+    PURGE_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗣𝗨𝗥𝗚𝗘 ✦</blockquote>
+
+Reply <code>/purge</code> to a message in a group to delete all messages from there to the latest message.</b>"""
+  
+    WHOIS_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗨𝗦𝗘𝗥 𝗜𝗡𝗙𝗢 ✦</blockquote>
+
+Use <code>/info</code> to view detailed user profile information.</b>"""
+  
+    JSON_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗝𝗦𝗢𝗡 𝗩𝗜𝗘𝗪𝗘𝗥 ✦</blockquote>
+
+Reply <code>/json</code> to any message to inspect its raw Telegram JSON payload.</b>"""
+  
+    URLSHORT_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 ✦</blockquote>
+
+Use <code>/shortlink domain api_key</code> in your group to connect your shortener.</b>"""
+  
+    CARB_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 ✦</blockquote></b>"""
+
+    GEN_PASS = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗣𝗔𝗦𝗦𝗪𝗢𝗥𝗗 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗢𝗥 ✦</blockquote>
+
+Use <code>/genpassword 20</code> or <code>/genpw 20</code> to generate a strong password.</b>"""
+  
+    SHARE_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗔𝗥𝗘 𝗧𝗘𝗫𝗧 ✦</blockquote>
+
+Use <code>/share your text</code> to generate a one-click Telegram share button.</b>"""
+  
+    PIN_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗣𝗜𝗡 ✦</blockquote>
+
+• <code>/pin</code> — Pin replied message
+• <code>/unpin</code> — Unpin current message</b>"""
+
+    RESTART_TXT = """<b>✦ 𝗠𝗼𝘃𝗶𝗲𝘀𝗭𝗼𝗻𝗲𝗙𝗹𝗶𝘅 𝗥𝗲𝘀𝘁𝗮𝗿𝘁𝗲𝗱 ✦
+
+<blockquote>📅 <b>Date:</b> <code>{}</code>
+⏰ <b>Time:</b> <code>{}</code>
+🌐 <b>Timezone:</b> <code>Asia/Kolkata</code>
+🚀 <b>Edition:</b> <code>MoviesZoneFlix v3.0</code></blockquote></b>"""
 
     LOGO = """
-████████╗███████╗███████╗██╗  ██╗    ╔██        ██╗       ██╗
-╚═ ██╔══╝██╔════╝██╔════╝██║  ██║     ║██      ██║        ██║
-   ██║    █████╗  ██║      ███████║      ║██    ██║         ██║
-   ██║    ██╔══╝  ██║      ██╔══██║       ║██  ██║  ╔██     ██║
-   ██║    ███████╗███████╗██║  ██║        ║████║   ║████████║
-   ╚═╝    ╚══════╝╚══════╝╚═╝  ╚═╝        ╚════╝   ╚════════╝"""
+╔══════════════════════════════════════════════╗
+║               MOVIESZONEFLIX                 ║
+╚══════════════════════════════════════════════╝"""
  
-    TAMIL_INFO = """
-ஏய் <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
+    TAMIL_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗧𝗔𝗠𝗜𝗟) ✦</blockquote>
 
+1. MoviesZoneFlix போட்டை உங்கள் குழுவில் Admin ஆக்குங்கள்.
+2. உங்கள் Shortlink இணையதளம் மற்றும் API சேர்க்கவும்:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. Tutorial வீடியோ இணைப்பை சேர்க்கவும்:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
- இப்போது டெலிகிராமிலும் பணம் சம்பாதிக்கலாம்.
+    ENGLISH_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗘𝗡𝗚𝗟𝗜𝗦𝗛) ✦</blockquote>
 
- தந்தி மூலம் பணம் சம்பாதிக்க உங்களிடம் 1 குழு இருக்க வேண்டும்.
- உங்களிடம் குழு இருந்தால், எங்கள் bot ஐ உங்கள் குழுவில் சேர்ப்பதன் மூலம் நீங்கள் பணம் சம்பாதிக்கலாம்.
+1. Add <b>MoviesZoneFlix</b> to your group as an Administrator.
+2. Connect your shortener domain and API key:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. Set your tutorial link:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
- உங்கள் குழுவில் அதிக உறுப்பினர்கள் இருந்தால், உங்கள் வருமானம் அதிகரிக்கும்.
+    TELUGU_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗧𝗘𝗟𝗨𝗚𝗨) ✦</blockquote>
 
- எப்படி மற்றும் என்ன செய்ய வேண்டும்
+1. <b>MoviesZoneFlix</b> బాట్‌ను మీ గ్రూప్‌లో Admin చేయండి.
+2. మీ వెబ్‌సైట్ మరియు API జోడించండి:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. ట్యుటోరియల్ వీడియో లింక్ సెట్ చేయండి:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
- படி 1: இந்த TGBoxOffice போட் உங்கள் குழுவை நிர்வாகியாக்குங்கள்
+    HINDI_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗛𝗜𝗡𝗗𝗜) ✦</blockquote>
 
- படி 2: உங்கள் இணையதளம் மற்றும் API ஐச் சேர்க்கவும்
+1. <b>MoviesZoneFlix</b> बॉट को अपने ग्रुप में Admin बनाएं।
+2. अपनी वेबसाइट और API जोड़ें:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. ट्यूटोरियल वीडियो लिंक सेट करें:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
- Exp: /shortlink xtz.in 4b392f8eb6ad711fbe58
+    MALAYALAM_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗠𝗔𝗟𝗔𝗬𝗔𝗟𝗔𝗠) ✦</blockquote>
 
- வீடியோவைச் சேர்க்கவும்
+1. <b>MoviesZoneFlix</b> ബോട്ടിനെ നിങ്ങളുടെ ഗ്രൂപ്പിൽ Admin ആക്കുക.
+2. വെബ്‌സൈറ്റും API-യും ചേർക്കുക:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. ട്യൂട്ടോറിയൽ ലിങ്ക് സെറ്റ് ചെയ്യുക:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
- 👇 எப்படி சேர்ப்பது 👇
+    URDU_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗨𝗥𝗗𝗨) ✦</blockquote>
 
- Exp: /set_tutorial video link
+1. اپنے گروپ میں <b>MoviesZoneFlix</b> بوٹ کو ایڈمن بنائیں۔
+2. اپنی ویب سائٹ اور API شامل کریں:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. ٹیوٹوریل لنک سیٹ کریں:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
-மேலும் உங்கள் குழுவில் பயிற்சி வீடியோ தொகுப்பு ஆகிடும்..."""
+    GUJARATI_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗚𝗨𝗝𝗔𝗥𝗔𝗧𝗜) ✦</blockquote>
 
-    ENGLISH_INFO = """
-Hey <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
+1. તમારા જૂથમાં <b>MoviesZoneFlix</b> બોટને Admin બનાવો.
+2. તમારી વેબસાઇટ અને API ઉમેરો:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. ટ્યુટોરિયલ લિંક સેટ કરો:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
+    KANNADA_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗞𝗔𝗡𝗡𝗔𝗗𝗔) ✦</blockquote>
 
- Now you can earn money on Telegram too.
+1. ನಿಮ್ಮ ಗುಂಪಿನಲ್ಲಿ <b>MoviesZoneFlix</b> ಬೋಟ್ ಅನ್ನು Admin ಮಾಡಿ.
+2. ನಿಮ್ಮ ವೆಬ್‌ಸೈಟ್ ಮತ್ತು API ಸೇರಿಸಿ:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. ಟ್ಯುಟೋರಿಯಲ್ ಲಿಂಕ್ ಹೊಂದಿಸಿ:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
- You must have 1 group to earn money by telegram.
- If you have a group, you can earn money by adding our bot to your group.
+    BANGLADESH_INFO = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗛𝗢𝗥𝗧𝗟𝗜𝗡𝗞 𝗚𝗨𝗜𝗗𝗘 (𝗕𝗔𝗡𝗚𝗟𝗔) ✦</blockquote>
 
- The more members you have in your group, the higher your income will be.
+1. আপনার গ্রুপে <b>MoviesZoneFlix</b> বটকে Admin করুন।
+2. আপনার ওয়েবসাইট এবং API যোগ করুন:
+   <code>/shortlink site.in YOUR_API_KEY</code>
+3. টিউটোরিয়াল লিঙ্ক সেট করুন:
+   <code>/set_tutorial https://t.me/...</code></b>"""
 
- How and what to do
+    RENAME_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗥𝗘𝗡𝗔𝗠𝗘 & 𝗧𝗛𝗨𝗠𝗕𝗡𝗔𝗜𝗟 ✦</blockquote>
 
- Step 1: Administer this TGBoxOffice bot to your group
+🌌 <b>Thumbnail Commands:</b>
+• <code>/set_thumb</code> — Reply to a photo to save thumbnail
+• <code>/view_thumb</code> — View current thumbnail
+• <code>/del_thumb</code> — Delete current thumbnail
 
- Step 2: Add your website and API
+📑 <b>Custom Caption Commands:</b>
+• <code>/set_caption</code> — Set custom file caption
+• <code>/see_caption</code> — View current custom caption
+• <code>/del_caption</code> — Delete custom caption
 
- Exp: /shortlink xtz.in 4b392f8eb6ad711fbe58
+✏️ <b>Rename Command:</b>
+• <code>/rename</code> — Reply to any file to rename it</b>"""
 
- Add a video
+    STREAM_TXT = """<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗧𝗥𝗘𝗔𝗠 & 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗 ✦</blockquote>
 
- 👇 How to add 👇
-
- Exp: /set_tutorial video link
-
-Also your tutorial will be Added Your Group..."""
-
-    TELUGU_INFO = """
-హే <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
-
-
- ఇప్పుడు మీరు టెలిగ్రామ్‌లో కూడా డబ్బు సంపాదించవచ్చు.
-
- టెలిగ్రామ్ ద్వారా డబ్బు సంపాదించడానికి మీరు తప్పనిసరిగా 1 గ్రూప్‌ని కలిగి ఉండాలి.
- మీకు గ్రూప్ ఉన్నట్లయితే, మా బాట్‌ను మీ గ్రూప్‌కి జోడించడం ద్వారా మీరు డబ్బు సంపాదించవచ్చు.
-
- మీ గ్రూప్‌లో ఎంత ఎక్కువ మంది సభ్యులు ఉంటే మీ ఆదాయం అంత ఎక్కువగా ఉంటుంది.
-
- ఎలా మరియు ఏమి చేయాలి
-
- దశ 1: ఈ TGBoxOffice బాట్‌ని మీ సమూహానికి నిర్వహించండి
-
- దశ 2: మీ వెబ్‌సైట్ మరియు APIని జోడించండి
-
- గడువు: /shortlink xtz.in 4b392f8eb6ad711fbe58
-
- వీడియోను జోడించండి
-
- 👇 ఎలా జోడించాలి 👇
-
- గడువు: /set_tutorial వీడియో లింక్
-
-అలాగే మీ బృందం వీడియో సేకరణకు శిక్షణ ఇస్తుంది..."""
-
-    HINDI_INFO = """
-अरे <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
-
-
- अब आप टेलीग्राम पर भी पैसे कमा सकते हैं।
-
- टेलीग्राम से पैसे कमाने के लिए आपके पास 1 ग्रुप होना चाहिए।
- यदि आपके पास एक समूह है, तो आप हमारे बॉट को अपने समूह में जोड़कर पैसा कमा सकते हैं।
-
- आपके समूह में जितने अधिक सदस्य होंगे, आपकी आय उतनी ही अधिक होगी।
-
- कैसे और क्या करना है
-
- चरण 1: इस फ़िल्टर-बॉट बॉट को अपने समूह में प्रशासित करें
-
- चरण 2: अपनी वेबसाइट और एपीआई जोड़ें
-
- एक्सप: /shortlink xtz.in 4b392f8eb6ad711fbe58
-
- एक वीडियो जोड़ें
-
- 👇कैसे जोड़ें 👇
-
- ऍक्स्प: /set_tutorial वीडियो लिंक
-
-साथ ही आपकी टीम वीडियो संग्रह का प्रशिक्षण भी देगी..."""
-
-    MALAYALAM_INFO = """
-ഹേയ് <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
-
-
- ഇപ്പോൾ നിങ്ങൾക്ക് ടെലിഗ്രാമിലും പണം സമ്പാദിക്കാം.
-
- ടെലിഗ്രാം വഴി പണം സമ്പാദിക്കാൻ നിങ്ങൾക്ക് ഒരു ഗ്രൂപ്പ് ഉണ്ടായിരിക്കണം.
- നിങ്ങൾക്ക് ഒരു ഗ്രൂപ്പ് ഉണ്ടെങ്കിൽ, നിങ്ങളുടെ ഗ്രൂപ്പിലേക്ക് ഞങ്ങളുടെ ബോട്ട് ചേർത്തുകൊണ്ട് നിങ്ങൾക്ക് പണം സമ്പാദിക്കാം.
-
- നിങ്ങളുടെ ഗ്രൂപ്പിൽ കൂടുതൽ അംഗങ്ങൾ ഉണ്ടെങ്കിൽ, നിങ്ങളുടെ വരുമാനം ഉയർന്നതായിരിക്കും.
-
- എങ്ങനെ, എന്ത് ചെയ്യണം
-
- ഘട്ടം 1: ഈ തലപതി-ഫിൽട്ടർ-ബോട്ട് ബോട്ട് നിങ്ങളുടെ ഗ്രൂപ്പിലേക്ക് നൽകുക
-
- ഘട്ടം 2: നിങ്ങളുടെ വെബ്‌സൈറ്റും API-യും ചേർക്കുക
-
- കാലഹരണപ്പെടൽ: /shortlink xtz.in 4b392f8eb6ad711fbe58
-
- ഒരു വീഡിയോ ചേർക്കുക
-
- 👇 എങ്ങനെ ചേർക്കാം 👇
-
- കാലഹരണപ്പെടൽ: /set_tutorial വീഡിയോ ലിങ്ക്
-
-നിങ്ങളുടെ ടീം വീഡിയോ ശേഖരണവും പരിശീലിപ്പിക്കും..."""
-
-    URTU_INFO = """
- <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
-
-
- اب آپ ٹیلی گرام پر بھی پیسے کما سکتے ہیں۔
-
- ٹیلی گرام کے ذریعے پیسے کمانے کے لیے آپ کے پاس 1 گروپ ہونا ضروری ہے۔
- اگر آپ کا کوئی گروپ ہے، تو آپ ہمارے بوٹ کو اپنے گروپ میں شامل کر کے پیسے کما سکتے ہیں۔
-
- آپ کے گروپ میں جتنے زیادہ ممبر ہوں گے آپ کی آمدنی اتنی ہی زیادہ ہوگی۔
-
- کیسے اور کیا کرنا ہے۔
-
- مرحلہ 1: اپنے گروپ میں اس TGBoxOffice بوٹ کا انتظام کریں۔
-
- مرحلہ 2: اپنی ویب سائٹ اور API شامل کریں۔
-
- Exp: /shortlink xtz.in 4b392f8eb6ad711fbe58
-
- ایک ویڈیو شامل کریں۔
-
- 👇 کیسے شامل کریں 👇
-
- Exp: /set_tutorial ویڈیو لنک
-
-نیز آپ کی ٹیم ویڈیو جمع کرنے کی تربیت دے گی..."""
-
-    GUJARATI_INFO = """
-અરે <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
-
-
- હવે તમે ટેલિગ્રામ પર પણ પૈસા કમાઈ શકો છો.
-
- ટેલિગ્રામ દ્વારા પૈસા કમાવવા માટે તમારી પાસે 1 જૂથ હોવું આવશ્યક છે.
- જો તમારી પાસે જૂથ છે, તો તમે અમારા બોટને તમારા જૂથમાં ઉમેરીને પૈસા કમાઈ શકો છો.
-
- તમારા જૂથમાં તમારા જેટલા વધુ સભ્યો હશે તેટલી તમારી આવક વધુ હશે.
-
- કેવી રીતે અને શું કરવું
-
- પગલું 1: તમારા જૂથમાં આ TGBoxOffice બોટનું સંચાલન કરો
-
- પગલું 2: તમારી વેબસાઇટ અને API ઉમેરો
-
- સમાપ્તિ: /shortlink xtz.in 4b392f8eb6ad711fbe58
-
- વિડિઓ ઉમેરો
-
- 👇 કેવી રીતે ઉમેરવું 👇
-
- સમાપ્તિ: /set_tutorial વિડિઓ લિંક
-
-તેમજ તમારી ટીમ વિડિયો કલેક્શનની તાલીમ આપશે..."""
-
-    KANNADA_INFO = """
-ಹೇ {message.from_user.mention}
-
- ಈಗ ನೀವು ಟೆಲಿಗ್ರಾಮ್‌ನಲ್ಲಿಯೂ ಹಣ ಗಳಿಸಬಹುದು.
-
- ಟೆಲಿಗ್ರಾಮ್ ಮೂಲಕ ಹಣ ಗಳಿಸಲು ನೀವು 1 ಗುಂಪನ್ನು ಹೊಂದಿರಬೇಕು.
- ನೀವು ಗುಂಪನ್ನು ಹೊಂದಿದ್ದರೆ, ನಮ್ಮ ಬೋಟ್ ಅನ್ನು ನಿಮ್ಮ ಗುಂಪಿಗೆ ಸೇರಿಸುವ ಮೂಲಕ ನೀವು ಹಣವನ್ನು ಗಳಿಸಬಹುದು.
-
- ನಿಮ್ಮ ಗುಂಪಿನಲ್ಲಿ ನೀವು ಹೆಚ್ಚು ಸದಸ್ಯರನ್ನು ಹೊಂದಿದ್ದರೆ, ನಿಮ್ಮ ಆದಾಯವು ಹೆಚ್ಚಾಗುತ್ತದೆ.
-
- ಹೇಗೆ ಮತ್ತು ಏನು ಮಾಡಬೇಕು
-
- ಹಂತ 1: ಈ ಫಿಲ್ಟರ್-ಬಾಟ್ ಬೋಟ್ ಅನ್ನು ನಿಮ್ಮ ಗುಂಪಿಗೆ ನಿರ್ವಹಿಸಿ
-
- ಹಂತ 2: ನಿಮ್ಮ ವೆಬ್‌ಸೈಟ್ ಮತ್ತು API ಸೇರಿಸಿ
-
- ಅವಧಿ: /shortlink xtz.in 4b392f8eb6ad711fbe58
-
- ವೀಡಿಯೊ ಸೇರಿಸಿ
-
- 👇 ಸೇರಿಸುವುದು ಹೇಗೆ 👇
-
- ಅವಧಿ: /set_tutorial ವೀಡಿಯೊ ಲಿಂಕ್
-
-ನಿಮ್ಮ ತಂಡವು ವೀಡಿಯೋ ಸಂಗ್ರಹಣೆಗೆ ತರಬೇತಿ ನೀಡಲಿದೆ..."""
-
-    BANGLADESH_INFO = """
-আরে <a href='tg://settings'>ᴍʏ ғʀɪᴇɴᴅ</a> 
-
- এখন আপনি টেলিগ্রামেও অর্থ উপার্জন করতে পারেন।
-
- টেলিগ্রামের মাধ্যমে অর্থ উপার্জন করতে আপনার অবশ্যই 1টি গ্রুপ থাকতে হবে।
- আপনার যদি একটি গ্রুপ থাকে, আপনি আপনার গ্রুপে আমাদের বট যোগ করে অর্থ উপার্জন করতে পারেন।
-
- আপনার গ্রুপে যত বেশি সদস্য থাকবেন আপনার আয় তত বেশি হবে।
-
- কিভাবে এবং কি করতে হবে
-
- ধাপ 1: আপনার গ্রুপে এই TGBoxOffice বট পরিচালনা করুন
-
- ধাপ 2: আপনার ওয়েবসাইট এবং API যোগ করুন
-
- মেয়াদ: /shortlink xtz.in 4b392f8eb6ad711fbe58
-
- একটি ভিডিও যোগ করুন
-
- 👇 কিভাবে যোগ করবেন 👇
-
- মেয়াদ: /set_tutorial ভিডিও লিঙ্ক
-
-এছাড়াও আপনার দল ভিডিও সংগ্রহের প্রশিক্ষণ দেবে..."""
-
-    RENAME_TXT = """
-🌌 <b><u>HOW TO SET THUMBNAIL</u></b>
-  
-•> /set_thumb - send any picture to automatically set thumbnail.
-•> /del_thumb use this command and delete your old thumbnail.
-•> /view_thumb use this command view your current thumbnail.
-
-📑 <b><u>HOW TO SET CUSTOM CAPTION</u></b>
-
-•> /set_caption - set a custom caption
-•> /see_caption - see your custom caption
-•> /del_caption - delete custom caption
-
-Example:- /set_caption 📕 File Name: {filename}
-💾 Size: {filesize}
-⏰ Duration: {duration}
-
-✏️ <b><u>HOW TO RENAME A FILE</u></b>
-
-•> /rename - send any file and click rename option and type new file name and \nthen select [ document, video, audio ]👈 choice this.
-"""
-
-    STREAM_TXT = """<b><u>HOW TO GET STREAM AND DOWNLOAD LINK :</u>
-
-/stream - ɢᴇᴛ sᴛʀᴇᴀᴍᴀʙʟᴇ ᴀɴᴅ ᴅᴏᴡɴʟᴏᴀᴅᴀʙʟᴇ ʟɪɴᴋ ᴏғ ᴀɴʏ ғɪʟᴇ</b>"""
-
-
-# Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
-
-
-    
-
+• Send <code>/stream</code> replying to any file to generate high-speed online streaming and direct download links.</b>"""

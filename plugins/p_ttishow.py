@@ -1,6 +1,6 @@
-# Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
+# Don't Remove Credit @MoviesZoneFlix
+# Subscribe YouTube Channel For Amazing Bot @MoviesZoneFlix
+# Ask Doubt on telegram @MoviesZoneFlix
 
 import os, string, logging, random, asyncio, time, datetime, re, sys, json, base64
 from Script import script

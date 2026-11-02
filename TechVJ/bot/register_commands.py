@@ -1,22 +1,10 @@
-# Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
+# Don't Remove Credit @MoviesZoneFlix
+# Official Update Channel: https://t.me/+Kmi6jBTE_MY4N2Q9
+# Contact: https://t.me/alonekingstarbackagain
 
 """
-Auto-registers every bot command with Telegram as soon as TGBoxOffice
+Auto-registers every bot command with Telegram as soon as MoviesZoneFlix
 finishes starting up.
-
-Two menus are published so neither the inbox of a normal user nor an
-admin's menu gets overwhelmed:
-  - PUBLIC_COMMANDS  -> pushed to the bot's global default scope, so
-    every user's Telegram client shows a clean "/" command menu.
-  - ADMIN_COMMANDS   -> pushed on top of the public list, scoped only
-    to each chat listed in ADMINS, so admins see the full power-user
-    menu while everyone else keeps the tidy one.
-
-Call `await register_all_commands(bot)` once, right after the bot's
-identity is confirmed on startup (see bot.py). Safe to call again on
-every restart; Telegram simply overwrites the previous command list.
 """
 
 import logging
@@ -30,13 +18,18 @@ logger = logging.getLogger(__name__)
 
 # Commands every user can see and use.
 PUBLIC_COMMANDS = {
-    "start": "Start the bot / show the welcome message",
+    "start": "Start MoviesZoneFlix / show the welcome screen",
     "help": "Show all available features",
-    "about": "About this bot",
-    "alive": "Check if the bot is alive",
+    "about": "About MoviesZoneFlix",
+    "alive": "Check if MoviesZoneFlix is online",
     "ping": "Check the bot's response time",
     "imdb": "Search IMDb for a movie or series",
-    "search": "Search for a file by name",
+    "search": "Search for a movie or series file",
+    "myplan": "Check your premium plan & verification status",
+    "mycredits": "Check your remaining verification credits & time",
+    "plan": "View available premium plans",
+    "settings": "Configure bot settings for this chat",
+    "request": "Request a movie or series",
     "song": "Download a song",
     "video": "Download a video",
     "mp3": "Download audio as MP3",
@@ -44,24 +37,28 @@ PUBLIC_COMMANDS = {
     "lyrics": "Get song lyrics",
     "tts": "Convert text to speech",
     "font": "Convert text into stylish fonts",
-    "myplan": "Check your current premium plan",
-    "plan": "View available premium plans",
-    "settings": "Configure bot settings for this chat",
     "id": "Get the Telegram ID of a user or chat",
     "info": "Get info about a user",
-    "request": "Request a movie or series",
 }
 
 # Extra commands shown only to the chats listed in ADMINS, on top of
 # everything in PUBLIC_COMMANDS.
 ADMIN_COMMANDS = {
+    "auto": "Configure Series & Movie 3-quality auto-posting channel",
+    "shortmode": "Select Shortener Mode (Time Expiry / Credits) & manage shorteners",
+    "mode": "Quick alias for Shortener Mode Selection",
+    "panel": "Open the interactive MoviesZoneFlix admin dashboard",
+    "save": "Open MoviesZoneFlix backup and ZIP import center",
+    "index": "Index files from a channel link or range",
+    "indexstatus": "View and manage running index tasks",
+    "cancelindex": "Cancel running index tasks",
     "broadcast": "Broadcast a message to all users",
     "grp_broadcast": "Broadcast a message to all groups",
     "ban": "Ban a user from using the bot",
     "unban": "Unban a user",
     "users": "Show total users",
     "chats": "Show total chats",
-    "channel": "Manage force-subscribe channels",
+    "channel": "View configured auto-index channels",
     "logs": "Get the bot's log file",
     "delete": "Delete a file from the database",
     "deleteall": "Delete all files from the database",
@@ -71,7 +68,6 @@ ADMIN_COMMANDS = {
     "addg": "Add a global filter",
     "restart": "Restart the bot",
     "stats": "Show database and storage stats",
-    "panel": "Open the interactive admin dashboard",
     "add": "Manage filters or run /add save and /add load backups",
     "clone": "Create a clone of this bot",
     "deleteclone": "Delete your clone bot",
@@ -93,11 +89,8 @@ ADMIN_COMMANDS = {
     "setskip": "Set the file-indexing skip number",
     "disable": "Disable a chat or command",
     "enable": "Re-enable a chat or command",
-    "index": "Index files from a channel link or range",
-    "indexstatus": "View and manage running index tasks",
-    "cancelindex": "Cancel running index tasks",
-    "del": "Remove an admin or auth user",
-    "delall": "Remove all stored data of a type",
+    "del": "Remove a filter in this chat",
+    "delall": "Remove all filters in this chat",
     "batch": "Generate a batch file link",
     "pbatch": "Generate a private batch link",
     "filter": "Add a filter in this chat",
@@ -108,7 +101,7 @@ ADMIN_COMMANDS = {
     "disconnect": "Disconnect a connected chat",
     "fsub": "Enable force-subscribe",
     "nofsub": "Disable force-subscribe",
-    "shortlink": "Set a link shortener for this chat",
+    "shortlink": "Set a link shortener or mode for this chat",
     "shortlink_info": "View the current shortener settings",
     "setshortlinkon": "Enable the shortener",
     "setshortlinkoff": "Disable the shortener",
@@ -133,7 +126,7 @@ ADMIN_COMMANDS = {
     "stickerid": "Get the file ID of a sticker",
     "runs": "Check the bot's uptime",
     "openai": "Ask the built-in AI a question",
-    "repo": "Get the bot's source code link",
+    "repo": "Get the bot's official channel link",
 }
 
 
@@ -142,11 +135,6 @@ def _as_bot_commands(mapping: dict) -> list:
 
 
 async def register_all_commands(bot: Client) -> None:
-    """Push the public command menu globally, then the combined
-    public+admin menu to every chat listed in ADMINS. Logs and
-    continues on failure so a Telegram hiccup here never blocks
-    the rest of startup."""
-
     public_commands = _as_bot_commands(PUBLIC_COMMANDS)
     admin_commands = _as_bot_commands({**PUBLIC_COMMANDS, **ADMIN_COMMANDS})
 
@@ -158,11 +146,10 @@ async def register_all_commands(bot: Client) -> None:
 
     for admin_id in ADMINS:
         if not isinstance(admin_id, int):
-            # ADMINS can hold usernames too; set_bot_commands needs a chat_id.
             continue
         try:
             await bot.set_bot_commands(admin_commands, scope=BotCommandScopeChat(chat_id=admin_id))
         except Exception as e:
             logger.error(f"Failed to register admin commands for {admin_id}: {e}")
 
-    logger.info("TGBoxOffice command registration complete.")
+    logger.info("MoviesZoneFlix command registration complete.")

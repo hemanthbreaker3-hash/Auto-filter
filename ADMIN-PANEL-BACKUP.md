@@ -1,4 +1,4 @@
-# TGBOXOFFICE Admin Panel & Database Backup
+# MoviesZoneFlix Admin Panel & Database Backup
 
 ## Interactive panel
 

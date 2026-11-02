@@ -1,8 +1,8 @@
-# Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
+# Don't Remove Credit @MoviesZoneFlix
+# Subscribe YouTube Channel For Amazing Bot @MoviesZoneFlix
+# Ask Doubt on telegram @MoviesZoneFlix
 
-# Clone Code Credit : YT - @TGBoxOffice / TG - @TGBoxOffice / GitHub - @TGBoxOffice
+# Clone Code Credit : YT - @MoviesZoneFlix / TG - @MoviesZoneFlix / GitHub - @MoviesZoneFlix
 
 import logging, logging.config, pytz, asyncio
 
@@ -25,7 +25,7 @@ if not DATABASE_URI:
 if not ADMINS:
     _missing.append("ADMINS (at least one trusted Telegram numeric user ID)")
 if _missing:
-    raise RuntimeError("TGBOXOFFICE cannot start. Configure: " + ", ".join(_missing) + ". A bot token alone is not sufficient for Pyrogram + MongoDB.")
+    raise RuntimeError("MoviesZoneFlix cannot start. Configure: " + ", ".join(_missing) + ". A bot token alone is not sufficient for Pyrogram + MongoDB.")
 
 from database.users_chats_db import db
 from utils import temp
@@ -49,7 +49,7 @@ loop = asyncio.get_event_loop()
 
 async def start():
     print('\n')
-    print('Initializing TGBOXOFFICE')
+    print('Initializing MoviesZoneFlix')
     bot_info = await TechVJBot.get_me()
     await initialize_clients()
     # Load database-managed admins before command handlers become active.

@@ -1,8 +1,8 @@
-# Don't Remove Credit @TGBoxOffice
-# Subscribe YouTube Channel For Amazing Bot @TGBoxOffice
-# Ask Doubt on telegram @TGBoxOffice
+# Don't Remove Credit @MoviesZoneFlix
+# Subscribe YouTube Channel For Amazing Bot @MoviesZoneFlix
+# Ask Doubt on telegram @MoviesZoneFlix
 
-# Clone Code Credit : YT - @TGBoxOffice / TG - @TGBoxOffice / GitHub - @TGBoxOffice
+# Clone Code Credit : YT - @MoviesZoneFlix / TG - @MoviesZoneFlix / GitHub - @MoviesZoneFlix
 
 import os, logging, string, asyncio, time, re, ast, random, math, pytz, pyrogram
 from datetime import datetime, timedelta, date, time
@@ -32,7 +32,7 @@ SPELL_CHECK = {}
 @Client.on_message(filters.group & filters.text & filters.incoming)
 async def give_filter(client, message):
     ai_search = True
-    reply_msg = await message.reply_text(f"<b><i>Searching For {message.text} 🔍</i></b>")
+    reply_msg = await message.reply_text(f"<b>🔍 <i>MoviesZoneFlix searching for</i> <code>{message.text}</code>...</b>")
     await auto_filter(client, message.text, message, reply_msg, ai_search)
             
 @Client.on_message(filters.private & filters.text & filters.incoming)
@@ -42,7 +42,7 @@ async def pm_text(bot, message):
     user_id = message.from_user.id
     if content.startswith("/") or content.startswith("#"): return  # ignore commands and hashtags
     ai_search = True
-    reply_msg = await bot.send_message(message.from_user.id, f"<b><i>Searching For {content} 🔍</i></b>", reply_to_message_id=message.id)
+    reply_msg = await bot.send_message(message.from_user.id, f"<b>🔍 <i>MoviesZoneFlix searching for</i> <code>{content}</code>...</b>", reply_to_message_id=message.id)
     await auto_filter(bot, content, message, reply_msg, ai_search)
     
 @Client.on_callback_query(filters.regex(r"^next"))
@@ -136,7 +136,7 @@ async def advantage_spoll_choker(bot, query):
     if files:
         k = (movie, files, offset, total_results)
         ai_search = True
-        reply_msg = await query.message.edit_text(f"<b><i>Searching For {movie} 🔍</i></b>")
+        reply_msg = await query.message.edit_text(f"<b>🔍 <i>MoviesZoneFlix searching for</i> <code>{movie}</code>...</b>")
         await auto_filter(bot, movie, query, reply_msg, ai_search, k)
     else:
         reqstr1 = query.from_user.id if query.from_user else 0
@@ -516,90 +516,48 @@ async def seasons_cb_handler(client: Client, query: CallbackQuery):
 @Client.on_callback_query(filters.regex(r"^fs#"))
 async def filter_seasons_cb_handler(client: Client, query: CallbackQuery):
     _, seas, key = query.data.split("#")
-    curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
-    search = FRESH.get(key)
-    search = (search or '').replace('_', ' ')
-    sea = ""
-    season_search = ["s01","s02", "s03", "s04", "s05", "s06", "s07", "s08", "s09", "s10", "season 01","season 02","season 03","season 04","season 05","season 06","season 07","season 08","season 09","season 10", "season 1","season 2","season 3","season 4","season 5","season 6","season 7","season 8","season 9"]
-    for x in range (len(season_search)):
-        if season_search[x] in search:
-            sea = season_search[x]
-            break
-    if sea:
-        search = search.replace(sea, "")
-    else:
-        search = search
-    
+    search = (FRESH.get(key) or '').replace('_', ' ')
+    search = re.sub(r"(?i)\b(?:season\s*\d{1,2}|s\d{1,3})\b", "", search).strip()
+    search = re.sub(r"\s+", " ", search).strip()
     req = query.from_user.id
     chat_id = query.message.chat.id
-    message = query.message
     try:
         if int(req) not in [query.message.reply_to_message.from_user.id, 0]:
             return await query.answer(
-                f"⚠️ ʜᴇʟʟᴏ{query.from_user.first_name},\nᴛʜɪꜱ ɪꜱ ɴᴏᴛ ʏᴏᴜʀ ᴍᴏᴠɪᴇ ʀᴇQᴜᴇꜱᴛ,\nʀᴇQᴜᴇꜱᴛ ʏᴏᴜʀ'ꜱ...",
+                f"⚠️ ʜᴇʟʟᴏ {query.from_user.first_name},\nᴛʜɪꜱ ɪꜱ ɴᴏᴛ ʏᴏᴜʀ ᴍᴏᴠɪᴇ ʀᴇQᴜᴇꜱᴛ,\nʀᴇQᴜᴇꜱᴛ ʏᴏᴜʀ'ꜱ...",
                 show_alert=True,
             )
-    except:
+    except Exception:
         pass
-    
-    searchagn = search
-    search1 = search
-    search2 = search
-    search = f"{search} {seas}"
+    if seas != "homepage":
+        search = f"{search} {seas}".strip()
     BUTTONS0[key] = search
-    
-    files, _, _ = await get_search_results(chat_id, search, max_results=10)
-    files = [file for file in files if re.search(seas, file["file_name"], re.IGNORECASE)]
-    
-    seas1 = "s01" if seas == "season 1" else "s02" if seas == "season 2" else "s03" if seas == "season 3" else "s04" if seas == "season 4" else "s05" if seas == "season 5" else "s06" if seas == "season 6" else "s07" if seas == "season 7" else "s08" if seas == "season 8" else "s09" if seas == "season 9" else "s10" if seas == "season 10" else ""
-    search1 = f"{search1} {seas1}"
-    BUTTONS1[key] = search1
-    files1, _, _ = await get_search_results(chat_id, search1, max_results=10)
-    files1 = [file for file in files1 if re.search(seas1, file["file_name"], re.IGNORECASE)]
-    
-    if files1:
-        files.extend(files1)
-    
-    seas2 = "season 01" if seas == "season 1" else "season 02" if seas == "season 2" else "season 03" if seas == "season 3" else "season 04" if seas == "season 4" else "season 05" if seas == "season 5" else "season 06" if seas == "season 6" else "season 07" if seas == "season 7" else "season 08" if seas == "season 8" else "season 09" if seas == "season 9" else "s010"
-    search2 = f"{search2} {seas2}"
-    BUTTONS2[key] = search2
-    files2, _, _ = await get_search_results(chat_id, search2, max_results=10)
-    files2 = [file for file in files2 if re.search(seas2, file["file_name"], re.IGNORECASE)]
-
-    if files2:
-        files.extend(files2)
-        
+    files, offset, total_results = await get_search_results(chat_id, search, offset=0, filter=True)
     if not files:
-        await query.answer("🚫 𝗡𝗼 𝗙𝗶𝗹𝗲 𝗪𝗲𝗿𝗲 𝗙𝗼𝘂𝗻𝗱 🚫", show_alert=1)
+        await query.answer("🚫 𝗡𝗼 𝗙𝗶𝗹𝗲 𝗪𝗲𝗿𝗲 𝗙𝗼𝘂𝗻𝗱 🚫", show_alert=True)
         return
     temp.GETALL[key] = files
     btn = [
         [
             InlineKeyboardButton(
-                text=f"[{get_size(filevj['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), re.sub(r'_+', ' ', filevj['file_name']).split()))}", callback_data=f"file#{filevj['file_id']}", style=ButtonStyle.DANGER),
+                text=f"[{get_size(filevj['file_size'])}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), re.sub(r'_+', ' ', filevj['file_name']).split()))}",
+                callback_data=f"file#{filevj['file_id']}",
+                style=ButtonStyle.DANGER,
+            ),
         ]
         for filevj in files
     ]
-    btn.insert(0, 
-        [
-            InlineKeyboardButton(f'ǫᴜᴀʟɪᴛʏ', callback_data=f"qualities#{key}", style=ButtonStyle.DANGER),
-            InlineKeyboardButton("ᴇᴘɪsᴏᴅᴇs", callback_data=f"episodes#{key}", style=ButtonStyle.DANGER),
-            InlineKeyboardButton("sᴇᴀsᴏɴs",  callback_data=f"seasons#{key}", style=ButtonStyle.DANGER)
-        ]
-    )
+    btn.insert(0, [
+        InlineKeyboardButton('ǫᴜᴀʟɪᴛʏ', callback_data=f"qualities#{key}", style=ButtonStyle.DANGER),
+        InlineKeyboardButton("ᴇᴘɪsᴏᴅᴇs", callback_data=f"episodes#{key}", style=ButtonStyle.DANGER),
+        InlineKeyboardButton("sᴇᴀsᴏɴs", callback_data=f"seasons#{key}", style=ButtonStyle.DANGER)
+    ])
     btn.insert(0, [
         InlineKeyboardButton("𝐒𝐞𝐧𝐝 𝐀𝐥𝐥", callback_data=f"sendfiles#{key}", style=ButtonStyle.DANGER),
         InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇs", callback_data=f"languages#{key}", style=ButtonStyle.DANGER),
         InlineKeyboardButton("ʏᴇᴀʀs", callback_data=f"years#{key}", style=ButtonStyle.DANGER)
-    ])   
-    offset = 0
-
-    btn.append([
-            InlineKeyboardButton(
-                text="↭ ʙᴀᴄᴋ ᴛᴏ ꜰɪʟᴇs ​↭",
-                callback_data=f"next_{req}_{key}_{offset}", style=ButtonStyle.DANGER),
     ])
-    
+    btn.append([InlineKeyboardButton(text="↭ ʙᴀᴄᴋ ᴛᴏ ꜰɪʟᴇs ↭", callback_data=f"next_{req}_{key}_0", style=ButtonStyle.DANGER)])
     try:
         await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(btn))
     except MessageNotModified:
@@ -808,7 +766,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
     
     elif query.data.startswith("send_fsall"):
         temp_var, ident, key, offset = query.data.split("#")
-        search = BUTTON0.get(key)
+        search = BUTTONS0.get(key) or BUTTONS.get(key) or FRESH.get(key)
         if not search:
             await query.answer(script.OLD_ALRT_TXT.format(query.from_user.first_name),show_alert=True)
             return
@@ -937,7 +895,7 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
         )
         temp.IMDB_CAP[message.from_user.id] = cap
     else:
-        cap = f"<b>Tʜᴇ Rᴇꜱᴜʟᴛꜱ Fᴏʀ ☞ {search}\n\nRᴇǫᴜᴇsᴛᴇᴅ Bʏ ☞ {message.from_user.mention}\n\nʀᴇsᴜʟᴛ sʜᴏᴡ ɪɴ ☞ {remaining_seconds} sᴇᴄᴏɴᴅs\n\nᴘᴏᴡᴇʀᴇᴅ ʙʏ ☞ : {message.chat.title} \n\n⚠️ ᴀꜰᴛᴇʀ 5 ᴍɪɴᴜᴛᴇꜱ ᴛʜɪꜱ ᴍᴇꜱꜱᴀɢᴇ ᴡɪʟʟ ʙᴇ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ᴅᴇʟᴇᴛᴇᴅ 🗑️\n\n</b>"
+        cap = f"<b><blockquote>✦ 𝗠𝗢𝗩𝗜𝗘𝗦𝗭𝗢𝗡𝗘𝗙𝗟𝗜𝗫 • 𝗦𝗘𝗔𝗥𝗖𝗛 𝗥𝗘𝗦𝗨𝗟𝗧𝗦 ✦</blockquote>\n\n🎬 <b>Query:</b> <code>{search}</code>\n👤 <b>Requested By:</b> {message.from_user.mention}\n⚡ <b>Speed:</b> <code>{remaining_seconds}s</code>\n🏠 <b>Chat:</b> {message.chat.title or 'MoviesZoneFlix'}\n\n<i>⏳ Auto-deletes in 5 minutes</i>\n\n</b>"
     if imdb and imdb.get('poster'):
         try:
             hehe = await message.reply_photo(photo=imdb.get('poster'), caption=cap, reply_markup=InlineKeyboardMarkup(btn))
@@ -1001,7 +959,7 @@ async def advantage_spell_chok(client, name, msg, reply_msg, vj_search):
     SPELL_CHECK[mv_id] = movielist
     if vj_search == True:
         vj_search_new = False
-        vj_ai_msg = await reply_msg.edit_text("<b><i>Advance Ai Of TGBOXOFFICE Try To Find Your Movie With Your Wrong Spelling.</i></b>")
+        vj_ai_msg = await reply_msg.edit_text("<b><i>Advance Ai Of MoviesZoneFlix Try To Find Your Movie With Your Wrong Spelling.</i></b>")
         movienamelist = []
         movienamelist += [movie.get('title') for movie in movies]
         for techvj in movienamelist:

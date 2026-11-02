@@ -1,4 +1,4 @@
-# TGBoxOffice indexing manager
+# MoviesZoneFlix indexing manager
 import asyncio
 import html
 import logging
@@ -20,6 +20,7 @@ import info
 from info import ADMINS, INDEX_REQ_CHANNEL as LOG_CHANNEL
 from utils import temp
 from database.ia_filterdb import save_files_batch
+from TechVJ.util.auto_post import process_caption_for_auto_post
 from database.users_chats_db import db, normalize_channel_id
 from TechVJ.util.telegram_rich import ButtonStyle
 
@@ -421,6 +422,10 @@ async def run_index(bot, task_id, chat, first_id, last_id, status_msg):
                     if media:
                         media.caption = msg.caption
                         batch.append(media)
+                        raw_cap = str(msg.caption) if msg.caption else None
+                        raw_fname = getattr(media, "file_name", None)
+                        if raw_cap or raw_fname:
+                            await process_caption_for_auto_post(bot, caption=raw_cap, source_chat_id=chat, file_name=raw_fname)
                         if len(batch) >= 100:
                             await flush()
                     else:

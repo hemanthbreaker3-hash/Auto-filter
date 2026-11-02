@@ -35,7 +35,7 @@
 
 - Note : You Can Turn On Or Off Every Feature, Just Use Which Feature You Want By Turning It On.
 
-Join My <a href='https://telegram.me/vj_bots'>Update Channel</a> For More Update Regarding Repo.</b>
+Join My <a href='https://t.me/+Kmi6jBTE_MY4N2Q9'>Update Channel</a> For More Update Regarding Repo.</b>
 
 ### How To Deploy : [Video Tutorial](https://youtu.be/3SJR7vH2kRo)
 
@@ -186,7 +186,7 @@ Edit info.py with variables as given below then run bot
 
 ## Thanks to 
  - <b>Thanks To [Pyrogram Library](https://github.com/pyrogram/pyrogram) & [Pyrofork Library](https://github.com/Mayuri-Chan/pyrofork)
- - Thanks To [TGBOXOFFICE](https://youtube.com/@TGBoxOffice) To Modify And Add Amazing Feature In The Repo
+ - Thanks To [MoviesZoneFlix](https://t.me/+Kmi6jBTE_MY4N2Q9) To Modify And Add Amazing Feature In The Repo
  - Thanks To [Eva Marie](https://t.me/TeamEvamaria) For Base Repo
  - Thanks To All Everyone In This Journey</b>
 
@@ -210,7 +210,7 @@ Selling The Codes To Other People For Money Is *Strictly Prohibited*.</b>
 
 
 
-## TGBOXOFFICE setup
+## MoviesZoneFlix setup
 
 1. Copy `.env.example` to `.env` and fill in `BOT_TOKEN`, `API_ID`, `API_HASH`, `DATABASE_URI`, and `ADMINS`.
 2. Add the bot as an administrator to each file-index channel in `CHANNELS`.
@@ -253,13 +253,20 @@ New indexed files are distributed round-robin across the built-in writable file 
 
 ### Community links
 
-- Support chat: https://t.me/+6FvvEegcE3tmNTg1
-- Updates channel: https://t.me/HiTLERYT
+- Support chat: https://t.me/movieszoneflixsearch
+- Updates channel: https://t.me/+Kmi6jBTE_MY4N2Q9
 
 These are the default support and updates links. You can override them with `SUPPORT_CHAT` and `CHNL_LNK` environment variables. Clone bots retain their individually configured update-channel link when one is set; otherwise they use the default updates channel.
 
 
 ### Community links
-- Support chat: https://t.me/+6FvvEegcE3tmNTg1
-- Movie group: https://t.me/+6FvvEegcE3tmNTg1
-- Updates channel: https://t.me/HiTLERYT
+- Support chat: https://t.me/movieszoneflixsearch
+- Movie group: https://t.me/movieszoneflixsearch
+- Updates channel: https://t.me/+Kmi6jBTE_MY4N2Q9
+
+
+### Auto-index setup reliability
+- `/auto on` now waits for a separate destination channel ID message.
+- Reconfiguring the destination no longer silently disables an already-enabled auto-indexer.
+- Auto-indexing remains enabled until an admin explicitly uses `/auto off` or the panel Disable control.
+- Numeric positive channel IDs are normalized to Telegram `-100…` channel IDs; bot admin access is validated before saving.

@@ -268,8 +268,8 @@ def _validate_backup(path):
     snapshot = _read_snapshot_file(path)
     if not isinstance(snapshot, dict):
         raise ValueError("Unsupported or invalid backup file.")
-    if snapshot.get("format") not in (None, "TGBOXOFFICE-MONGO-BACKUP"):
-        raise ValueError("Unsupported or invalid TGBOXOFFICE backup file.")
+    if snapshot.get("format") not in (None, "MOVIESZONEFLIX-MONGO-BACKUP", "TGBOXOFFICE-MONGO-BACKUP"):
+        raise ValueError("Unsupported or invalid MoviesZoneFlix backup file.")
     if not isinstance(snapshot.get("databases"), list):
         raise ValueError("Backup database section is invalid.")
     return snapshot
@@ -389,7 +389,7 @@ async def _process_uploaded_backup_message(client, message, uid):
             _WAITING_IMPORT.add(uid)
             await status.edit_text(
                 f"<b>❌ Import/Restore failed:</b> <code>{str(exc)[:600]}</code>\n\n"
-                "Please upload a valid TGBOXOFFICE backup <code>.zip</code> file or click Cancel.",
+                "Please upload a valid MoviesZoneFlix backup <code>.zip</code> file or click Cancel.",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("❎ Cancel", callback_data="tgbox_save:cancel", style=ButtonStyle.DANGER)]
                 ]),
@@ -444,7 +444,7 @@ async def save_menu(client, message):
     if message.reply_to_message and getattr(message.reply_to_message, "document", None):
         return await _process_uploaded_backup_message(client, message.reply_to_message, message.from_user.id)
     await message.reply_text(
-        "<b>💾 TGBOXOFFICE BACKUP CENTER</b>\n\n"
+        "<b>💾 MOVIESZONEFLIX BACKUP CENTER</b>\n\n"
         "Create a complete database backup ZIP or import & restore your data from a backup ZIP.",
         reply_markup=_save_menu_markup(),
     )
@@ -461,7 +461,7 @@ async def save_callbacks(client, query):
         _WAITING_IMPORT.add(uid)
         await query.answer("Send your backup ZIP file now.")
         await query.message.reply_text(
-            "<b>📥 Send your TGBOXOFFICE backup ZIP now.</b>\n\n"
+            "<b>📥 Send your MoviesZoneFlix backup ZIP now.</b>\n\n"
             "Upload the <code>.zip</code> backup file as a document in this private chat.\n"
             "As soon as the bot receives the ZIP, it will restore your database automatically.",
             reply_markup=InlineKeyboardMarkup([
@@ -518,7 +518,7 @@ async def save_callbacks(client, query):
             await query.message.reply_document(
                 zip_path,
                 file_name=f"TGBOXOFFICE-backup-{datetime.now(timezone.utc):%Y%m%d-%H%M%S}.zip",
-                caption=(f"<b>✅ TGBOXOFFICE backup created</b>\n\n"
+                caption=(f"<b>✅ MoviesZoneFlix backup created</b>\n\n"
                          f"📚 Collections: <code>{collections:,}</code>\n"
                          f"📄 Documents: <code>{documents:,}</code>\n\n"
                          "<i>Use /save → Import and send this ZIP to restore your data anytime.</i>"),
@@ -562,7 +562,7 @@ async def database_backup(client, message):
                 return await status.edit_text("⚠️ No database collections were found to back up.")
             await message.reply_document(
                 path, file_name=f"TGBOXOFFICE-backup-{datetime.now(timezone.utc):%Y%m%d-%H%M%S}.json.gz",
-                caption=(f"<b>✅ TGBOXOFFICE backup created</b>\n\n"
+                caption=(f"<b>✅ MoviesZoneFlix backup created</b>\n\n"
                          f"📚 Collections: <code>{collections:,}</code>\n"
                          f"📄 Documents: <code>{documents:,}</code>\n"
                          "<i>Keep this file private; it may contain bot and user data.</i>"),

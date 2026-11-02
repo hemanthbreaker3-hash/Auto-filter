@@ -1,13 +1,13 @@
-"""Telegram Bot API 10.x rich messages and native styled keyboards.
+"""Telegram Bot API 10.x rich messages and native styled keyboards for MoviesZoneFlix.
 
-Provides `ButtonStyle` (`PRIMARY`, `SUCCESS`, `DANGER`) and automatic Bot API
+Provides `ButtonStyle` (`PRIMARY`, `SUCCESS`, `DANGER`), automatic Bot API
 styled inline keyboard rendering across every Pyrogram/Pyrofork message and
-callback edit in the bot (including search results, filters, admin panels,
-indexing, backup/restore, clone bots, and extra plugins).
+callback edit in the bot, and automatic injection of the MoviesZoneFlix Search
+URL button (`https://t.me/movieszoneflixsearch`) on every group message.
 """
+import asyncio
 from enum import Enum
 import logging
-import re
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import aiohttp
@@ -19,6 +19,32 @@ logger = logging.getLogger(__name__)
 
 _VALID_STYLES = {"primary", "success", "danger"}
 _VALID_RICH_TYPES = {"url", "callback_data", "web_app", "copy_text", "disabled"}
+
+GROUP_SEARCH_URL = "https://t.me/movieszoneflixsearch"
+GROUP_SEARCH_BUTTON_DICT = {
+    "text": "🎬 MoviesZoneFlix Search",
+    "url": GROUP_SEARCH_URL,
+    "style": "success",
+}
+
+# Persistent pooled HTTP sessions keyed by event loop for high-speed Bot API calls
+_HTTP_SESSIONS: Dict[int, aiohttp.ClientSession] = {}
+
+
+def get_http_session() -> aiohttp.ClientSession:
+    """Return a shared, connection-pooled aiohttp ClientSession for the running event loop."""
+    try:
+        loop = asyncio.get_running_loop()
+        loop_id = id(loop)
+    except RuntimeError:
+        loop_id = 0
+    session = _HTTP_SESSIONS.get(loop_id)
+    if session is None or session.closed:
+        connector = aiohttp.TCPConnector(limit=100, ttl_dns_cache=300, keepalive_timeout=60)
+        timeout = aiohttp.ClientTimeout(total=20, connect=8)
+        session = aiohttp.ClientSession(connector=connector, timeout=timeout)
+        _HTTP_SESSIONS[loop_id] = session
+    return session
 
 
 class ButtonStyle(str, Enum):
@@ -35,7 +61,6 @@ class ButtonStyle(str, Enum):
         return str(self.value)
 
 
-# Expose ButtonStyle on pyrogram.enums and pyrogram.types so any import path works
 if not hasattr(enums, "ButtonStyle"):
     setattr(enums, "ButtonStyle", ButtonStyle)
 if not hasattr(types, "ButtonStyle"):
@@ -88,7 +113,7 @@ def infer_button_style(text: str = "", callback_data: str = "", url: str = "") -
         "get_trail", "buy_premium", "subscription", "earn money", "ᴇᴀʀɴ ᴍᴏɴᴇʏ",
         "join", "ᴊᴏɪɴ", "unmute", "yes", "uploaded", "upalert", "already_available",
         "alalert", "get file again", "ɢᴇᴛ ғɪʟᴇ ᴀɢᴀɪɴ", "✔", "✅", "🟢", "▶️", "💾",
-        "pages", "ᴘᴀɢᴇ", "𝐏𝐀𝐆𝐄",
+        "pages", "ᴘᴀɢᴇ", "𝐏𝐀𝐆𝐄", "movieszoneflix",
     )
     for tok in success_tokens:
         if tok in combined:
@@ -110,7 +135,6 @@ def _normalize_button_url(url: str) -> str:
     return f"https://{u}"
 
 
-# Patch InlineKeyboardButton.__init__ so `style=` is always accepted and stored
 _ORIG_IKB_INIT = InlineKeyboardButton.__init__
 if not getattr(InlineKeyboardButton, "_tgbox_style_patched", False):
     def _patched_ikb_init(self, text: str, *args, style: Any = None, **kwargs):
@@ -141,19 +165,18 @@ def _token(client) -> Optional[str]:
 
 
 async def api_request(client, method: str, payload: Dict[str, Any]) -> Any:
-    """Call an official Bot API method and return its result."""
+    """Call an official Bot API method using a pooled HTTP session and return its result."""
     token = _token(client)
     if not token:
         raise ValueError("This client has no bot token; rich Bot API methods require a bot client.")
     url = f"https://api.telegram.org/bot{token}/{method}"
-    timeout = aiohttp.ClientTimeout(total=30)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(url, json=payload) as response:
-            try:
-                data = await response.json(content_type=None)
-            except Exception as exc:
-                body = await response.text()
-                raise TelegramAPIError(f"Telegram returned HTTP {response.status}: {body[:500]}") from exc
+    session = get_http_session()
+    async with session.post(url, json=payload) as response:
+        try:
+            data = await response.json(content_type=None)
+        except Exception as exc:
+            body = await response.text()
+            raise TelegramAPIError(f"Telegram returned HTTP {response.status}: {body[:500]}") from exc
     if not data.get("ok"):
         desc = data.get("description", "Telegram Bot API request failed")
         if "message is not modified" in desc.lower():
@@ -256,24 +279,37 @@ def make_inline_keyboard(rows: Union[InlineKeyboardMarkup, Dict[str, Any], Itera
     return {"inline_keyboard": keyboard}
 
 
-async def apply_styled_markup(client, chat_id: Any, message_id: int, reply_markup: Any) -> bool:
-    """Apply native Bot API button styles to an existing message's inline keyboard."""
-    if reply_markup is None:
-        try:
-            await api_request(client, "editMessageReplyMarkup", {
-                "chat_id": chat_id,
-                "message_id": message_id,
-                "reply_markup": {"inline_keyboard": []},
-            })
-            return True
-        except MessageNotModified:
-            return True
-        except Exception:
-            return False
+def ensure_group_search_button(kb: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure the MoviesZoneFlix group search URL button is present in the inline keyboard."""
+    rows = list(kb.get("inline_keyboard", []))
+    for row in rows:
+        for btn in row:
+            if isinstance(btn, dict) and "movieszoneflixsearch" in str(btn.get("url", "")).lower():
+                return {"inline_keyboard": rows}
+    rows.append([dict(GROUP_SEARCH_BUTTON_DICT)])
+    return {"inline_keyboard": rows}
 
-    if not isinstance(reply_markup, (InlineKeyboardMarkup, dict, list, tuple)):
+
+def _is_group_message(msg: Any) -> bool:
+    chat = getattr(msg, "chat", None)
+    chat_type = getattr(chat, "type", None)
+    return chat_type in (enums.ChatType.GROUP, enums.ChatType.SUPERGROUP)
+
+
+async def apply_styled_markup(client, chat_id: Any, message_id: int, reply_markup: Any, is_group: bool = False) -> bool:
+    """Apply native Bot API button styles (and group search URL button if in a group) to a message."""
+    if reply_markup is None and not is_group:
+        return True
+
+    if reply_markup is None and is_group:
+        kb = {"inline_keyboard": [[dict(GROUP_SEARCH_BUTTON_DICT)]]}
+    elif isinstance(reply_markup, (InlineKeyboardMarkup, dict, list, tuple)):
+        kb = make_inline_keyboard(reply_markup)
+        if is_group:
+            kb = ensure_group_search_button(kb)
+    else:
         return False
-    kb = make_inline_keyboard(reply_markup)
+
     if not kb.get("inline_keyboard"):
         return False
     try:
@@ -290,8 +326,16 @@ async def apply_styled_markup(client, chat_id: Any, message_id: int, reply_marku
         return False
 
 
+def _schedule_styled_markup(client, chat_id: Any, message_id: int, reply_markup: Any, is_group: bool = False):
+    """Apply styled markup in the background so message sending returns immediately without double-blocking."""
+    try:
+        asyncio.create_task(apply_styled_markup(client, chat_id, message_id, reply_markup, is_group=is_group))
+    except Exception:
+        pass
+
+
 def install_global_styled_buttons():
-    """Patch Pyrogram Client methods so every InlineKeyboardMarkup in the bot renders with ButtonStyle colours."""
+    """Patch Pyrogram Client methods so every InlineKeyboardMarkup renders with ButtonStyle colours and group messages include the MoviesZoneFlix Search URL button without blocking message delivery."""
     if getattr(Client, "_tgbox_global_styled_patched", False):
         return
 
@@ -309,73 +353,91 @@ def install_global_styled_buttons():
     async def _SendMessage(self, chat_id, text, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_send_message(self, chat_id, text, *args, **kwargs)
-        if msg and isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
-            await apply_styled_markup(self, msg.chat.id, msg.id, reply_markup)
+        if msg:
+            is_grp = _is_group_message(msg)
+            if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
+                _schedule_styled_markup(self, msg.chat.id, msg.id, reply_markup, is_group=is_grp)
         return msg
 
     async def _SendPhoto(self, chat_id, photo, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_send_photo(self, chat_id, photo, *args, **kwargs)
-        if msg and isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
-            await apply_styled_markup(self, msg.chat.id, msg.id, reply_markup)
+        if msg:
+            is_grp = _is_group_message(msg)
+            if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
+                _schedule_styled_markup(self, msg.chat.id, msg.id, reply_markup, is_group=is_grp)
         return msg
 
     async def _SendCachedMedia(self, chat_id, file_id, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_send_cached_media(self, chat_id, file_id, *args, **kwargs)
-        if msg and isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
-            await apply_styled_markup(self, msg.chat.id, msg.id, reply_markup)
+        if msg:
+            is_grp = _is_group_message(msg)
+            if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
+                _schedule_styled_markup(self, msg.chat.id, msg.id, reply_markup, is_group=is_grp)
         return msg
 
     async def _CopyMessage(self, chat_id, from_chat_id, message_id, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_copy_message(self, chat_id, from_chat_id, message_id, *args, **kwargs)
-        if msg and isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
-            await apply_styled_markup(self, msg.chat.id, msg.id, reply_markup)
+        if msg:
+            is_grp = _is_group_message(msg)
+            if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
+                _schedule_styled_markup(self, msg.chat.id, msg.id, reply_markup, is_group=is_grp)
         return msg
 
     async def _SendDocument(self, chat_id, document, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_send_document(self, chat_id, document, *args, **kwargs)
-        if msg and isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
-            await apply_styled_markup(self, msg.chat.id, msg.id, reply_markup)
+        if msg:
+            is_grp = _is_group_message(msg)
+            if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
+                _schedule_styled_markup(self, msg.chat.id, msg.id, reply_markup, is_group=is_grp)
         return msg
 
     async def _SendVideo(self, chat_id, video, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_send_video(self, chat_id, video, *args, **kwargs)
-        if msg and isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
-            await apply_styled_markup(self, msg.chat.id, msg.id, reply_markup)
+        if msg:
+            is_grp = _is_group_message(msg)
+            if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
+                _schedule_styled_markup(self, msg.chat.id, msg.id, reply_markup, is_group=is_grp)
         return msg
 
     async def _SendAudio(self, chat_id, audio, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_send_audio(self, chat_id, audio, *args, **kwargs)
-        if msg and isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
-            await apply_styled_markup(self, msg.chat.id, msg.id, reply_markup)
+        if msg:
+            is_grp = _is_group_message(msg)
+            if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
+                _schedule_styled_markup(self, msg.chat.id, msg.id, reply_markup, is_group=is_grp)
         return msg
 
     async def _EditMessageText(self, chat_id, message_id, text, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_edit_message_text(self, chat_id, message_id, text, *args, **kwargs)
-        if isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
+        is_grp = _is_group_message(msg)
+        if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
             target_chat = msg.chat.id if getattr(msg, "chat", None) else chat_id
             target_id = getattr(msg, "id", None) or message_id
-            await apply_styled_markup(self, target_chat, target_id, reply_markup)
+            _schedule_styled_markup(self, target_chat, target_id, reply_markup, is_group=is_grp)
         return msg
 
     async def _EditMessageCaption(self, chat_id, message_id, *args, **kwargs):
         reply_markup = kwargs.get("reply_markup")
         msg = await orig_edit_message_caption(self, chat_id, message_id, *args, **kwargs)
-        if isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
+        is_grp = _is_group_message(msg)
+        if isinstance(reply_markup, (InlineKeyboardMarkup, dict)) or is_grp:
             target_chat = msg.chat.id if getattr(msg, "chat", None) else chat_id
             target_id = getattr(msg, "id", None) or message_id
-            await apply_styled_markup(self, target_chat, target_id, reply_markup)
+            _schedule_styled_markup(self, target_chat, target_id, reply_markup, is_group=is_grp)
         return msg
 
     async def _EditMessageReplyMarkup(self, chat_id, message_id, reply_markup=None, *args, **kwargs):
         if isinstance(reply_markup, (InlineKeyboardMarkup, dict)):
             kb = make_inline_keyboard(reply_markup)
+            if isinstance(chat_id, int) and chat_id < 0:
+                kb = ensure_group_search_button(kb)
             if kb.get("inline_keyboard"):
                 try:
                     await api_request(self, "editMessageReplyMarkup", {
@@ -425,7 +487,11 @@ async def send_rich_message(client, chat_id: Any, html: str,
     payload = {"chat_id": chat_id, "rich_message": {"html": html}}
     payload.update(kwargs)
     if reply_markup is not None:
-        payload["reply_markup"] = make_inline_keyboard(reply_markup) if not isinstance(reply_markup, dict) or "inline_keyboard" not in reply_markup else make_inline_keyboard(reply_markup["inline_keyboard"])
+        payload["reply_markup"] = (
+            make_inline_keyboard(reply_markup)
+            if not isinstance(reply_markup, dict) or "inline_keyboard" not in reply_markup
+            else make_inline_keyboard(reply_markup["inline_keyboard"])
+        )
     return await api_request(client, "sendRichMessage", payload)
 
 

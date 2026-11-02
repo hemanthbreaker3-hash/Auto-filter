@@ -3,6 +3,7 @@ from pyrogram import Client, filters, enums
 import info
 from database.users_chats_db import db, normalize_channel_id
 from database.ia_filterdb import save_file
+from TechVJ.util.auto_post import process_caption_for_auto_post
 
 logger = logging.getLogger(__name__)
 media_filter = filters.document | filters.video | filters.audio | filters.animation
@@ -33,6 +34,7 @@ async def _auto_index_incoming(bot, message):
             return
         chat_id = int(message.chat.id)
         norm_id = normalize_channel_id(chat_id)
+        post_channel_id = await db.get_auto_post_channel()
         excluded_ids = {
             normalize_channel_id(x) or x
             for x in [
@@ -40,6 +42,7 @@ async def _auto_index_incoming(bot, message):
                 getattr(info, "AUTH_CHANNEL", None),
                 getattr(info, "REQST_CHANNEL", None),
                 getattr(info, "SUPPORT_CHAT_ID", None),
+                post_channel_id,
                 *(getattr(info, "DELETE_CHANNELS", []) or []),
             ]
             if x
@@ -50,9 +53,8 @@ async def _auto_index_incoming(bot, message):
         allowed_channels = set(await db.get_managed_channels())
         if allowed_channels:
             if chat_id not in allowed_channels and (norm_id is None or norm_id not in allowed_channels):
-                # If it's a channel post and not explicitly removed, auto-register & index it
                 if message.chat.type == enums.ChatType.CHANNEL:
-                    doc = await db.config.find_one({"_id": "file_channels"})
+                    doc = await db.get_file_channels_doc()
                     removed = {normalize_channel_id(x) for x in (doc.get("removed_channels", []) if doc else [])}
                     if norm_id in removed or chat_id in removed:
                         return
@@ -62,9 +64,19 @@ async def _auto_index_incoming(bot, message):
         media_obj.caption = message.caption
         saved, status = await save_file(media_obj)
         if saved:
-            logger.info("Auto-indexed file from channel %s (msg %s)", chat_id, message.id)
+            logger.info("MoviesZoneFlix auto-indexed file from channel %s (msg %s)", chat_id, message.id)
+        # Check caption and file_name for movie/series name, season, episode, quality, and languages
+        raw_caption = str(message.caption) if message.caption else None
+        raw_file_name = getattr(media_obj, "file_name", None)
+        if raw_caption or raw_file_name:
+            await process_caption_for_auto_post(
+                bot,
+                caption=raw_caption,
+                source_chat_id=chat_id,
+                file_name=raw_file_name,
+            )
     except Exception:
-        logging.exception("TGBOXOFFICE channel auto-indexing failed")
+        logging.exception("MoviesZoneFlix channel auto-indexing failed")
 
 
 @Client.on_message((filters.channel | filters.group) & media_filter, group=-2)

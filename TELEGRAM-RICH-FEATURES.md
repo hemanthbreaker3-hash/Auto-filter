@@ -1,4 +1,4 @@
-# TGBOXOFFICE — Telegram Rich Messages & Native Button Styles
+# MoviesZoneFlix — Telegram Rich Messages & Native Button Styles
 
 This project now includes a compatibility layer for Telegram Bot API 10.1–10.3.
 The existing Pyrofork handlers and callback system remain unchanged. The new
@@ -10,11 +10,11 @@ Pyrofork 2.3.45 model layer may not serialize all Bot API 10.x fields.
 ```python
 await TechVJBot.send_rich_message(
     chat_id,
-    "<h2>Welcome to TGBOXOFFICE</h2>"
+    "<h2>Welcome to MoviesZoneFlix</h2>"
     "<p><b>Bold</b>, <i>italic</i>, <u>underline</u>, "
     "<s>strike</s>, <tg-spoiler>spoiler</tg-spoiler></p>"
     "<blockquote>Native Telegram quote</blockquote>"
-    "<pre language="python">print('TGBOXOFFICE')</pre>"
+    "<pre language="python">print('MoviesZoneFlix')</pre>"
     "<tg-button-row align="center">"
     "<tg-button type="url" style="success" url="https://t.me/">Open Telegram</tg-button>"
     "</tg-button-row>"
