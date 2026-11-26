@@ -310,21 +310,34 @@ async def upload_zip_to_github(client, message):
         return await message.reply_text(
             "Reply to a ZIP document with:\n<code>/uploadto repo_link branch commit_message</code>"
         )
-    args = message.text.split(maxsplit=3)
-    if len(args) != 4:
-        return await message.reply_text("Usage: <code>/uploadto repo_link branch commit_message</code>\n\nThis replaces ALL files on the target branch with the ZIP contents.")
+    # Parse explicitly from raw command text (handles /uploadto@BotName too).
+    raw_text = (message.text or message.caption or "").strip()
+    tokens = raw_text.split(None, 1)
+    command_token = tokens[0] if tokens else ""
+    command_name = command_token.split("@", 1)[0].lstrip("/").lower()
+    usage = "Usage: <code>/uploadto repo_link branch commit_message</code>\n\nThis replaces ALL files on the target branch with the ZIP contents."
+    if command_name != "uploadto" or len(tokens) < 2:
+        return await message.reply_text(usage)
+    fields = tokens[1].strip().split(None, 2)
+    if len(fields) < 3:
+        return await message.reply_text(usage)
+    repo_input, branch_input, commit_message = fields
     try:
-        owner, repo = _repo_parts(args[1])
-        branch = args[2].strip()
-        commit_message = args[3].strip()
+        owner, repo = _repo_parts(repo_input)
+        branch = branch_input.strip()
+        commit_message = commit_message.strip()
+        # Reject only Git-forbidden ref syntax; ordinary branches such as main work.
+        invalid_ref = (not branch or branch == "@" or branch.startswith("-")
+            or branch.startswith("/") or branch.endswith("/") or branch.endswith(".")
+            or branch.endswith(".lock") or ".." in branch or "@{" in branch
+            or any(ch in branch for ch in " ~^:?*\\")
+            or any(part == "" or part.startswith(".") or part.endswith(".lock") for part in branch.split("/")))
+        if invalid_ref:
+            raise ValueError(f"Invalid branch name {branch!r} (parsed from the second argument)")
         if not commit_message:
             raise ValueError("Commit message is required")
-        if not branch or branch.startswith("-") or ".." in branch or branch.endswith(("/", ".", ".lock")) or not re.fullmatch(r"[A-Za-z0-9._/-]+", branch):
-            raise ValueError("Invalid branch name")
-        if any(part in ("", ".", "..") for part in branch.split("/")):
-            raise ValueError("Invalid branch name")
     except ValueError as exc:
-        return await message.reply_text(f"<b>Invalid input:</b> {exc}")
+        return await message.reply_text(f"<b>Invalid input:</b> {html.escape(str(exc))}")
 
     credentials = await _get_credentials(message.from_user.id)
     if not credentials:
