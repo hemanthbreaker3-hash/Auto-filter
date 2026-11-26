@@ -9,6 +9,7 @@ import re
 import shutil
 import tempfile
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import quote, urlparse
 
 import requests
@@ -22,8 +23,9 @@ from database.users_chats_db import db
 log = logging.getLogger(__name__)
 GITHUB_API = "https://api.github.com"
 MAX_ZIP_BYTES = 50 * 1024 * 1024
-MAX_UNPACKED_BYTES = 150 * 1024 * 1024
-MAX_FILES = 500
+MAX_UNPACKED_BYTES = 1024 * 1024 * 1024  # 1 GiB safety ceiling
+MAX_FILES = 10000
+BLOB_WORKERS = min(16, max(4, (os.cpu_count() or 4) * 2))
 
 # Interactive setup state is intentionally in-memory: only the user currently
 # configuring credentials can submit the next value. Credentials themselves
@@ -116,7 +118,7 @@ def _zip_entries(zip_path):
     with zipfile.ZipFile(zip_path) as archive:
         infos = [i for i in archive.infolist() if not i.is_dir()]
         if len(infos) > MAX_FILES:
-            raise ValueError(f"ZIP contains too many files (maximum {MAX_FILES})")
+            raise ValueError(f"ZIP contains too many files (maximum {MAX_FILES:,})")
         # Remove a single common wrapper directory (e.g. project-main/).
         first_parts = [i.filename.replace("\\", "/").split("/") for i in infos]
         common_root = first_parts[0][0] if first_parts and first_parts[0] else ""
@@ -154,7 +156,7 @@ def _zip_entries(zip_path):
     return entries
 
 
-def _publish_zip(owner, repo, branch, token, expected_login, zip_path):
+def _publish_zip(owner, repo, branch, token, expected_login, zip_path, commit_message):
     # Validate token and repository permissions first.
     user = _gh_request("GET", "/user", token)
     authenticated_login = (user.get("login") or "").lower()
@@ -183,18 +185,26 @@ def _publish_zip(owner, repo, branch, token, expected_login, zip_path):
         _gh_request("POST", f"/repos/{owner}/{repo}/git/refs", token,
                     json={"ref": f"refs/heads/{branch}", "sha": parent_sha})
 
-    parent_commit = _gh_request("GET", f"/repos/{owner}/{repo}/git/commits/{parent_sha}", token)
-    base_tree = parent_commit["tree"]["sha"]
+    # Build a complete replacement tree from the ZIP, not an overlay on the old tree.
+    # Omitting base_tree makes this a new root tree: files absent from the ZIP are removed.
     entries = _zip_entries(zip_path)
-    tree_items = []
-    for path, content in entries:
+    # Upload blobs concurrently instead of waiting for one API round-trip per file.
+    # Results are restored to ZIP order for deterministic tree construction.
+    def upload_blob(entry):
+        path, content = entry
         blob = _gh_request("POST", f"/repos/{owner}/{repo}/git/blobs", token,
                            json={"content": base64.b64encode(content).decode("ascii"), "encoding": "base64"})
-        tree_items.append({"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]})
+        return {"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]}
+
+    tree_items = [None] * len(entries)
+    with ThreadPoolExecutor(max_workers=BLOB_WORKERS) as pool:
+        futures = {pool.submit(upload_blob, entry): idx for idx, entry in enumerate(entries)}
+        for future in as_completed(futures):
+            tree_items[futures[future]] = future.result()
     tree = _gh_request("POST", f"/repos/{owner}/{repo}/git/trees", token,
-                       json={"base_tree": base_tree, "tree": tree_items})
+                       json={"tree": tree_items})
     commit = _gh_request("POST", f"/repos/{owner}/{repo}/git/commits", token,
-                         json={"message": "Update files via MoviesZoneFlix /uploadto", "tree": tree["sha"], "parents": [parent_sha]})
+                         json={"message": commit_message, "tree": tree["sha"], "parents": [parent_sha]})
     try:
         _gh_request("PATCH", f"/repos/{owner}/{repo}/git/refs/heads/{branch_path}", token,
                     json={"sha": commit["sha"], "force": False})
@@ -298,14 +308,17 @@ async def upload_zip_to_github(client, message):
         return
     if not message.reply_to_message or not message.reply_to_message.document:
         return await message.reply_text(
-            "Reply to a ZIP document with:\n<code>/uploadto https://github.com/owner/repo branch-name</code>"
+            "Reply to a ZIP document with:\n<code>/uploadto repo_link branch commit_message</code>"
         )
-    args = message.text.split(maxsplit=2)
-    if len(args) != 3:
-        return await message.reply_text("Usage: <code>/uploadto repo_link branch_name</code>")
+    args = message.text.split(maxsplit=3)
+    if len(args) != 4:
+        return await message.reply_text("Usage: <code>/uploadto repo_link branch commit_message</code>\n\nThis replaces ALL files on the target branch with the ZIP contents.")
     try:
         owner, repo = _repo_parts(args[1])
         branch = args[2].strip()
+        commit_message = args[3].strip()
+        if not commit_message:
+            raise ValueError("Commit message is required")
         if not branch or branch.startswith("-") or ".." in branch or branch.endswith(("/", ".", ".lock")) or not re.fullmatch(r"[A-Za-z0-9._/-]+", branch):
             raise ValueError("Invalid branch name")
         if any(part in ("", ".", "..") for part in branch.split("/")):
@@ -330,11 +343,11 @@ async def upload_zip_to_github(client, message):
         if not downloaded or not zipfile.is_zipfile(downloaded):
             raise ValueError("The replied file is not a valid ZIP archive")
         count, commit_url, login = await asyncio.to_thread(
-            _publish_zip, owner, repo, branch, credentials[1], credentials[0], downloaded
+            _publish_zip, owner, repo, branch, credentials[1], credentials[0], downloaded, commit_message
         )
         result = (f"<b>GitHub upload successful</b>\n\n"
                   f"Repository: <code>{html.escape(owner)}/{html.escape(repo)}</code>\nBranch: <code>{html.escape(branch)}</code>\n"
-                  f"Files uploaded: <code>{count}</code>\nAuthenticated account: <code>{login}</code>")
+                  f"Files uploaded: <code>{count}</code>\nCommit message: <code>{html.escape(commit_message)}</code>\nBranch contents replaced: <b>Yes</b>\nAuthenticated account: <code>{login}</code>")
         if commit_url:
             result += f"\n<a href=\"{commit_url}\">View commit</a>"
         await status.edit_text(result, disable_web_page_preview=True)
@@ -343,7 +356,7 @@ async def upload_zip_to_github(client, message):
         detail = str(exc)[:500]
         await status.edit_text(
             f"<b>GitHub upload failed</b>\n\nRepository: <code>{html.escape(owner)}/{html.escape(repo)}</code>\n"
-            f"Branch: <code>{html.escape(branch)}</code>\nReason: <code>{html.escape(detail)}</code>\n\n"
+            f"Branch: <code>{html.escape(branch)}</code>\nCommit message: <code>{html.escape(commit_message)}</code>\nReason: <code>{html.escape(detail)}</code>\n\n"
             "Check that your PAT has Contents: Read and write access and that the branch is writable."
         )
     finally:
