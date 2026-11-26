@@ -187,7 +187,23 @@ async def start():
     app = web.AppRunner(await web_server())
     await app.setup()
     bind_address = "0.0.0.0"
-    await web.TCPSite(app, bind_address, PORT).start()
+    # If another process already owns the configured port (e.g. 8080),
+    # try nearby ports instead of crashing the bot startup.
+    requested_port = int(PORT)
+    bound_port = None
+    for candidate_port in [requested_port] + list(range(requested_port + 1, requested_port + 11)):
+        try:
+            await web.TCPSite(app, bind_address, candidate_port).start()
+            bound_port = candidate_port
+            break
+        except OSError as exc:
+            if getattr(exc, "errno", None) != 98:
+                raise
+            logging.warning("Web server port %s is occupied; trying next port", candidate_port)
+    if bound_port is None:
+        raise RuntimeError(f"Unable to bind web server: ports {requested_port}-{requested_port + 10} are occupied")
+    if bound_port != requested_port:
+        logging.warning("Web server started on fallback port %s (configured port %s)", bound_port, requested_port)
     await idle()
 
 

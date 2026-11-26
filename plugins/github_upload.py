@@ -310,34 +310,38 @@ async def upload_zip_to_github(client, message):
         return await message.reply_text(
             "Reply to a ZIP document with:\n<code>/uploadto repo_link branch commit_message</code>"
         )
-    # Parse explicitly from raw command text (handles /uploadto@BotName too).
+    # Parse command independently of Telegram command entity/mention formatting.
     raw_text = (message.text or message.caption or "").strip()
-    tokens = raw_text.split(None, 1)
-    command_token = tokens[0] if tokens else ""
-    command_name = command_token.split("@", 1)[0].lstrip("/").lower()
     usage = "Usage: <code>/uploadto repo_link branch commit_message</code>\n\nThis replaces ALL files on the target branch with the ZIP contents."
-    if command_name != "uploadto" or len(tokens) < 2:
+    if not raw_text:
         return await message.reply_text(usage)
-    fields = tokens[1].strip().split(None, 2)
-    if len(fields) < 3:
+    # Accept /uploadto and /uploadto@BotName, with extra whitespace/newlines.
+    lines = raw_text.splitlines()
+    command_line = lines[0].strip()
+    command_parts = command_line.split(maxsplit=1)
+    command_token = command_parts[0].split("@", 1)[0].lstrip("/").lower()
+    if command_token != "uploadto":
         return await message.reply_text(usage)
-    repo_input, branch_input, commit_message = fields
+    # If arguments are wrapped onto subsequent lines, join them.
+    args_text = (command_parts[1] if len(command_parts) > 1 else "") + " " + " ".join(lines[1:])
+    args_text = args_text.strip()
+    # Repository URL/repo slug, branch, and the remaining text as commit message.
+    fields = args_text.split(maxsplit=2)
+    if len(fields) != 3:
+        return await message.reply_text(usage)
+    repo_input, branch, commit_message = fields
     try:
         owner, repo = _repo_parts(repo_input)
-        branch = branch_input.strip()
+        branch = branch.strip()
         commit_message = commit_message.strip()
-        # Reject only Git-forbidden ref syntax; ordinary branches such as main work.
-        invalid_ref = (not branch or branch == "@" or branch.startswith("-")
-            or branch.startswith("/") or branch.endswith("/") or branch.endswith(".")
-            or branch.endswith(".lock") or ".." in branch or "@{" in branch
-            or any(ch in branch for ch in " ~^:?*\\")
-            or any(part == "" or part.startswith(".") or part.endswith(".lock") for part in branch.split("/")))
-        if invalid_ref:
-            raise ValueError(f"Invalid branch name {branch!r} (parsed from the second argument)")
+        # Branch is passed to GitHub's ref API for authoritative validation.
+        # Avoid rejecting valid branch names with local validators.
+        if not branch or branch.startswith("-") or any(ord(ch) < 32 for ch in branch):
+            raise ValueError(f"Invalid branch argument parsed: {branch!r}")
         if not commit_message:
             raise ValueError("Commit message is required")
     except ValueError as exc:
-        return await message.reply_text(f"<b>Invalid input:</b> {html.escape(str(exc))}")
+        return await message.reply_text(f"<b>Invalid input:</b> {html.escape(str(exc))}\n\nParsed command: <code>{html.escape(raw_text)}</code>")
 
     credentials = await _get_credentials(message.from_user.id)
     if not credentials:
