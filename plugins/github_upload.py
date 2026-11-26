@@ -5,14 +5,18 @@ import hashlib
 import html
 import logging
 import os
+import random
 import re
 import shutil
 import tempfile
+import threading
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import quote, urlparse
 
 import requests
+from requests.adapters import HTTPAdapter
 from cryptography.fernet import Fernet, InvalidToken
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -25,7 +29,11 @@ GITHUB_API = "https://api.github.com"
 MAX_ZIP_BYTES = 50 * 1024 * 1024
 MAX_UNPACKED_BYTES = 1024 * 1024 * 1024  # 1 GiB safety ceiling
 MAX_FILES = 10000
-BLOB_WORKERS = min(16, max(4, (os.cpu_count() or 4) * 2))
+# Keep concurrency modest for POST /git/blobs to avoid triggering GitHub secondary rate limits.
+BLOB_WORKERS = 4
+MAX_API_RETRIES = 6
+RETRYABLE_STATUS_CODES = {403, 429, 500, 502, 503, 504}
+_INVALID_BRANCH_CHARS_RE = re.compile(r"[\x00-\x1f\x7f ~^:?*\[\\]")
 
 # Interactive setup state is intentionally in-memory: only the user currently
 # configuring credentials can submit the next value. Credentials themselves
@@ -73,7 +81,7 @@ async def _get_credentials(user_id):
 
 
 def _repo_parts(raw):
-    raw = (raw or "").strip().rstrip("/")
+    raw = (raw or "").strip().strip("<>").rstrip("/")
     if not raw:
         raise ValueError("Repository link is missing")
     if re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", raw):
@@ -92,24 +100,171 @@ def _repo_parts(raw):
     return owner, repo
 
 
-def _gh_request(method, path, token, **kwargs):
+def validate_branch_name(branch):
+    """Validate Git branch names without rejecting valid names like 'main'."""
+    branch = (branch or "").strip()
+    if branch.startswith("refs/heads/"):
+        branch = branch[len("refs/heads/"):]
+    if not branch:
+        raise ValueError("Branch name is required")
+    if (
+        branch.startswith("-")
+        or branch.startswith(".")
+        or branch.startswith("/")
+        or branch.endswith("/")
+        or branch.endswith(".")
+        or branch.endswith(".lock")
+        or ".." in branch
+        or "@{" in branch
+        or "//" in branch
+        or _INVALID_BRANCH_CHARS_RE.search(branch)
+    ):
+        raise ValueError(f"Invalid branch name: {branch!r}")
+    return branch
+
+
+def parse_uploadto_command(raw_text):
+    """Parse /uploadto[@BotUsername] <repo_url> <branch> <commit_message>."""
+    text = (raw_text or "").strip()
+    if not text:
+        raise ValueError("Command text is empty")
+    match = re.match(r"^/uploadto(?:@[A-Za-z0-9_]+)?(?:\s+(.*))?$", text, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        raise ValueError("Command must start with /uploadto")
+    args_text = (match.group(1) or "").strip()
+    if not args_text:
+        raise ValueError("Missing repository link, branch, and commit message")
+    fields = args_text.split(maxsplit=2)
+    if len(fields) == 1:
+        raise ValueError("Missing branch name and commit message")
+    if len(fields) == 2:
+        raise ValueError("Missing commit message")
+    repo_input, branch_input, commit_input = fields
+    owner, repo = _repo_parts(repo_input)
+    branch = validate_branch_name(branch_input)
+    commit_message = commit_input.strip()
+    if not commit_message:
+        raise ValueError("Commit message is required")
+    return owner, repo, branch, commit_message
+
+
+class _GitHubRateLimiter:
+    """Thread-safe shared cooldown and gentle mutation pacing across workers."""
+
+    def __init__(self, min_mutation_interval=0.06):
+        self._lock = threading.Lock()
+        self._cooldown_until = 0.0
+        self._next_mutation_at = 0.0
+        self._min_mutation_interval = min_mutation_interval
+
+    def wait_turn(self, is_mutation=False):
+        while True:
+            with self._lock:
+                now = time.monotonic()
+                wait_for = max(0.0, self._cooldown_until - now)
+                if is_mutation and wait_for == 0.0:
+                    if now < self._next_mutation_at:
+                        wait_for = self._next_mutation_at - now
+                    else:
+                        self._next_mutation_at = now + self._min_mutation_interval
+                        return
+                elif wait_for == 0.0:
+                    return
+            time.sleep(min(wait_for, 5.0))
+
+    def trigger_cooldown(self, seconds):
+        if seconds <= 0:
+            return
+        with self._lock:
+            target = time.monotonic() + seconds
+            if target > self._cooldown_until:
+                self._cooldown_until = target
+
+
+def _create_session():
+    session = requests.Session()
+    adapter = HTTPAdapter(pool_connections=max(8, BLOB_WORKERS * 2), pool_maxsize=max(8, BLOB_WORKERS * 2))
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+def _retry_delay_seconds(response, detail, attempt):
+    retry_after = response.headers.get("Retry-After")
+    if retry_after:
+        try:
+            return max(1.0, float(retry_after))
+        except ValueError:
+            pass
+    if response.status_code == 403 and response.headers.get("X-RateLimit-Remaining") == "0":
+        reset_hdr = response.headers.get("X-RateLimit-Reset")
+        if reset_hdr:
+            try:
+                wait = float(reset_hdr) - time.time() + 1.0
+                if 0 < wait <= 300:
+                    return wait
+            except ValueError:
+                pass
+    detail_lower = (detail or "").lower()
+    if response.status_code in (403, 429) and ("rate limit" in detail_lower or response.status_code == 429):
+        base = min(120.0, 15.0 * (2 ** attempt))
+    elif response.status_code >= 500:
+        base = min(30.0, 2.0 * (2 ** attempt))
+    else:
+        return None
+    return base + random.uniform(0.5, 2.5)
+
+
+def _gh_request(method, path, token, session=None, rate_limiter=None, **kwargs):
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "MoviesZoneFlix-GitHub-Uploader",
     }
-    response = requests.request(method, GITHUB_API + path, headers=headers, timeout=(15, 90), **kwargs)
-    if response.status_code >= 400:
+    requester = session.request if session is not None else requests.request
+    is_mutation = method.upper() in {"POST", "PUT", "PATCH", "DELETE"}
+
+    for attempt in range(MAX_API_RETRIES + 1):
+        if rate_limiter is not None:
+            rate_limiter.wait_turn(is_mutation=is_mutation)
         try:
-            detail = response.json().get("message", response.reason)
-        except Exception:
-            detail = response.reason
-        # Never include request headers or token in surfaced errors.
-        raise RuntimeError(f"GitHub API {response.status_code}: {str(detail)[:350]}")
-    if response.status_code == 204 or not response.content:
-        return {}
-    return response.json()
+            response = requester(method, GITHUB_API + path, headers=headers, timeout=(15, 90), **kwargs)
+        except requests.RequestException as exc:
+            if attempt < MAX_API_RETRIES:
+                delay = min(30.0, 2.0 * (2 ** attempt)) + random.uniform(0.2, 1.0)
+                log.warning("GitHub request %s %s network error (%s); retrying in %.1fs", method, path, exc, delay)
+                time.sleep(delay)
+                continue
+            raise RuntimeError(f"GitHub network error after {MAX_API_RETRIES + 1} attempts: {str(exc)[:300]}") from exc
+
+        if response.status_code >= 400:
+            try:
+                detail = response.json().get("message", response.reason)
+            except Exception:
+                detail = response.reason
+            if response.status_code in RETRYABLE_STATUS_CODES and attempt < MAX_API_RETRIES:
+                delay = _retry_delay_seconds(response, detail, attempt)
+                if delay is not None:
+                    log.warning(
+                        "GitHub API %s on %s %s (attempt %d/%d); backing off %.1fs: %s",
+                        response.status_code, method, path, attempt + 1, MAX_API_RETRIES + 1, delay, str(detail)[:200],
+                    )
+                    if rate_limiter is not None:
+                        rate_limiter.trigger_cooldown(delay)
+                    time.sleep(delay)
+                    continue
+            # Never include request headers or token in surfaced errors.
+            raise RuntimeError(f"GitHub API {response.status_code}: {str(detail)[:350]}")
+
+        if response.status_code == 204 or not response.content:
+            return {}
+        return response.json()
+
+
+def _git_blob_sha(content):
+    header = f"blob {len(content)}\0".encode("ascii")
+    return hashlib.sha1(header + content).hexdigest()
 
 
 def _zip_entries(zip_path):
@@ -156,62 +311,136 @@ def _zip_entries(zip_path):
     return entries
 
 
+def _fetch_existing_blob_shas(owner, repo, commit_sha, token, session, rate_limiter):
+    """Fetch existing blob SHAs on the target/base commit to skip unchanged uploads."""
+    try:
+        commit_data = _gh_request(
+            "GET", f"/repos/{owner}/{repo}/git/commits/{commit_sha}", token,
+            session=session, rate_limiter=rate_limiter,
+        )
+        tree_sha = (commit_data.get("tree") or {}).get("sha")
+        if not tree_sha:
+            return set()
+        tree_data = _gh_request(
+            "GET", f"/repos/{owner}/{repo}/git/trees/{tree_sha}?recursive=1", token,
+            session=session, rate_limiter=rate_limiter,
+        )
+        return {
+            item["sha"]
+            for item in tree_data.get("tree", [])
+            if item.get("type") == "blob" and item.get("sha")
+        }
+    except Exception as exc:
+        log.debug("Could not prefetch existing tree blobs for %s/%s@%s: %s", owner, repo, commit_sha, exc)
+        return set()
+
+
 def _publish_zip(owner, repo, branch, token, expected_login, zip_path, commit_message):
-    # Validate token and repository permissions first.
-    user = _gh_request("GET", "/user", token)
-    authenticated_login = (user.get("login") or "").lower()
-    actual_login = user.get("login") or "unknown"
-    if authenticated_login != str(expected_login).lower():
-        raise RuntimeError(f"Configured username does not match the token account ({actual_login})")
-    repository = _gh_request("GET", f"/repos/{quote(owner)}/{quote(repo)}", token)
-    if repository.get("archived"):
-        raise RuntimeError("Repository is archived and cannot be updated")
-    if repository.get("permissions", {}).get("push") is False:
-        raise RuntimeError("This token does not have push access to the repository")
-
-    branch_path = quote(branch, safe="")
+    session = _create_session()
+    rate_limiter = _GitHubRateLimiter()
     try:
-        ref = _gh_request("GET", f"/repos/{owner}/{repo}/git/ref/heads/{branch_path}", token)
-        parent_sha = ref["object"]["sha"]
-    except RuntimeError as exc:
-        if "404" not in str(exc):
-            raise
-        default_branch = repository.get("default_branch")
-        if not default_branch:
-            raise RuntimeError("Could not determine the repository default branch")
-        default_ref = _gh_request("GET", f"/repos/{owner}/{repo}/git/ref/heads/{quote(default_branch, safe='')}", token)
-        parent_sha = default_ref["object"]["sha"]
-        # Create requested branch from the repository's default branch only.
-        _gh_request("POST", f"/repos/{owner}/{repo}/git/refs", token,
-                    json={"ref": f"refs/heads/{branch}", "sha": parent_sha})
+        # Validate token and repository permissions first.
+        user = _gh_request("GET", "/user", token, session=session, rate_limiter=rate_limiter)
+        authenticated_login = (user.get("login") or "").lower()
+        actual_login = user.get("login") or "unknown"
+        if authenticated_login != str(expected_login).lower():
+            raise RuntimeError(f"Configured username does not match the token account ({actual_login})")
+        repository = _gh_request("GET", f"/repos/{quote(owner)}/{quote(repo)}", token, session=session, rate_limiter=rate_limiter)
+        if repository.get("archived"):
+            raise RuntimeError("Repository is archived and cannot be updated")
+        if repository.get("permissions", {}).get("push") is False:
+            raise RuntimeError("This token does not have push access to the repository")
 
-    # Build a complete replacement tree from the ZIP, not an overlay on the old tree.
-    # Omitting base_tree makes this a new root tree: files absent from the ZIP are removed.
-    entries = _zip_entries(zip_path)
-    # Upload blobs concurrently instead of waiting for one API round-trip per file.
-    # Results are restored to ZIP order for deterministic tree construction.
-    def upload_blob(entry):
-        path, content = entry
-        blob = _gh_request("POST", f"/repos/{owner}/{repo}/git/blobs", token,
-                           json={"content": base64.b64encode(content).decode("ascii"), "encoding": "base64"})
-        return {"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]}
+        branch_path = quote(branch, safe="")
+        try:
+            ref = _gh_request("GET", f"/repos/{owner}/{repo}/git/ref/heads/{branch_path}", token, session=session, rate_limiter=rate_limiter)
+            parent_sha = ref["object"]["sha"]
+        except RuntimeError as exc:
+            err_text = str(exc)
+            if "404" not in err_text and "409" not in err_text:
+                raise
+            default_branch = repository.get("default_branch")
+            if not default_branch:
+                raise RuntimeError("Could not determine the repository default branch")
+            try:
+                default_ref = _gh_request(
+                    "GET", f"/repos/{owner}/{repo}/git/ref/heads/{quote(default_branch, safe='')}",
+                    token, session=session, rate_limiter=rate_limiter,
+                )
+            except RuntimeError as default_exc:
+                if "404" in str(default_exc) or "409" in str(default_exc):
+                    raise RuntimeError(
+                        "Repository is empty (no initial commit). Initialize it with a README on GitHub first, then retry."
+                    ) from default_exc
+                raise
+            parent_sha = default_ref["object"]["sha"]
+            # Create requested branch from the repository's default branch only.
+            _gh_request(
+                "POST", f"/repos/{owner}/{repo}/git/refs", token,
+                session=session, rate_limiter=rate_limiter,
+                json={"ref": f"refs/heads/{branch}", "sha": parent_sha},
+            )
 
-    tree_items = [None] * len(entries)
-    with ThreadPoolExecutor(max_workers=BLOB_WORKERS) as pool:
-        futures = {pool.submit(upload_blob, entry): idx for idx, entry in enumerate(entries)}
-        for future in as_completed(futures):
-            tree_items[futures[future]] = future.result()
-    tree = _gh_request("POST", f"/repos/{owner}/{repo}/git/trees", token,
-                       json={"tree": tree_items})
-    commit = _gh_request("POST", f"/repos/{owner}/{repo}/git/commits", token,
-                         json={"message": commit_message, "tree": tree["sha"], "parents": [parent_sha]})
-    try:
-        _gh_request("PATCH", f"/repos/{owner}/{repo}/git/refs/heads/{branch_path}", token,
-                    json={"sha": commit["sha"], "force": False})
-    except RuntimeError:
-        # A concurrent branch update is not force-pushed; report conflict safely.
-        raise RuntimeError("Branch changed during upload. No force push was performed; retry the command.")
-    return len(entries), commit.get("html_url"), authenticated_login
+        # Build a complete replacement tree from the ZIP, not an overlay on the old tree.
+        # Omitting base_tree makes this a new root tree: files absent from the ZIP are removed.
+        entries = _zip_entries(zip_path)
+        existing_shas = _fetch_existing_blob_shas(owner, repo, parent_sha, token, session, rate_limiter)
+
+        entry_shas = [_git_blob_sha(content) for _, content in entries]
+        blobs_to_upload = {}
+        for (_, content), sha in zip(entries, entry_shas):
+            if sha not in existing_shas and sha not in blobs_to_upload:
+                blobs_to_upload[sha] = content
+
+        uploaded_shas = {}
+        if blobs_to_upload:
+            def upload_blob(item):
+                local_sha, content = item
+                blob = _gh_request(
+                    "POST", f"/repos/{owner}/{repo}/git/blobs", token,
+                    session=session, rate_limiter=rate_limiter,
+                    json={"content": base64.b64encode(content).decode("ascii"), "encoding": "base64"},
+                )
+                return local_sha, blob["sha"]
+
+            with ThreadPoolExecutor(max_workers=BLOB_WORKERS) as pool:
+                futures = [pool.submit(upload_blob, item) for item in blobs_to_upload.items()]
+                for future in as_completed(futures):
+                    local_sha, remote_sha = future.result()
+                    uploaded_shas[local_sha] = remote_sha
+
+        tree_items = [
+            {
+                "path": path,
+                "mode": "100644",
+                "type": "blob",
+                "sha": sha if sha in existing_shas else uploaded_shas[sha],
+            }
+            for (path, _), sha in zip(entries, entry_shas)
+        ]
+
+        tree = _gh_request(
+            "POST", f"/repos/{owner}/{repo}/git/trees", token,
+            session=session, rate_limiter=rate_limiter,
+            json={"tree": tree_items},
+        )
+        commit = _gh_request(
+            "POST", f"/repos/{owner}/{repo}/git/commits", token,
+            session=session, rate_limiter=rate_limiter,
+            json={"message": commit_message, "tree": tree["sha"], "parents": [parent_sha]},
+        )
+        try:
+            _gh_request(
+                "PATCH", f"/repos/{owner}/{repo}/git/refs/heads/{branch_path}", token,
+                session=session, rate_limiter=rate_limiter,
+                json={"sha": commit["sha"], "force": False},
+            )
+        except RuntimeError:
+            # A concurrent branch update is not force-pushed; report conflict safely.
+            raise RuntimeError("Branch changed during upload. No force push was performed; retry the command.")
+        return len(entries), commit.get("html_url"), authenticated_login
+    finally:
+        session.close()
 
 
 @Client.on_message(filters.command("github") & filters.private)
@@ -302,7 +531,7 @@ async def github_setup_input(client, message):
         return await message.reply_text("<b>GitHub token saved securely.</b> Run /uploadto by replying to a ZIP file.")
 
 
-@Client.on_message(filters.command("uploadto"))
+@Client.on_message(filters.command("uploadto", case_sensitive=False))
 async def upload_zip_to_github(client, message):
     if not message.from_user:
         return
@@ -310,38 +539,17 @@ async def upload_zip_to_github(client, message):
         return await message.reply_text(
             "Reply to a ZIP document with:\n<code>/uploadto repo_link branch commit_message</code>"
         )
-    # Parse command independently of Telegram command entity/mention formatting.
     raw_text = (message.text or message.caption or "").strip()
     usage = "Usage: <code>/uploadto repo_link branch commit_message</code>\n\nThis replaces ALL files on the target branch with the ZIP contents."
     if not raw_text:
         return await message.reply_text(usage)
-    # Accept /uploadto and /uploadto@BotName, with extra whitespace/newlines.
-    lines = raw_text.splitlines()
-    command_line = lines[0].strip()
-    command_parts = command_line.split(maxsplit=1)
-    command_token = command_parts[0].split("@", 1)[0].lstrip("/").lower()
-    if command_token != "uploadto":
-        return await message.reply_text(usage)
-    # If arguments are wrapped onto subsequent lines, join them.
-    args_text = (command_parts[1] if len(command_parts) > 1 else "") + " " + " ".join(lines[1:])
-    args_text = args_text.strip()
-    # Repository URL/repo slug, branch, and the remaining text as commit message.
-    fields = args_text.split(maxsplit=2)
-    if len(fields) != 3:
-        return await message.reply_text(usage)
-    repo_input, branch, commit_message = fields
     try:
-        owner, repo = _repo_parts(repo_input)
-        branch = branch.strip()
-        commit_message = commit_message.strip()
-        # Branch is passed to GitHub's ref API for authoritative validation.
-        # Avoid rejecting valid branch names with local validators.
-        if not branch or branch.startswith("-") or any(ord(ch) < 32 for ch in branch):
-            raise ValueError(f"Invalid branch argument parsed: {branch!r}")
-        if not commit_message:
-            raise ValueError("Commit message is required")
+        owner, repo, branch, commit_message = parse_uploadto_command(raw_text)
     except ValueError as exc:
-        return await message.reply_text(f"<b>Invalid input:</b> {html.escape(str(exc))}\n\nParsed command: <code>{html.escape(raw_text)}</code>")
+        return await message.reply_text(
+            f"<b>Invalid input:</b> {html.escape(str(exc))}\n\n"
+            f"Parsed command: <code>{html.escape(raw_text)}</code>\n\n{usage}"
+        )
 
     credentials = await _get_credentials(message.from_user.id)
     if not credentials:
@@ -362,19 +570,28 @@ async def upload_zip_to_github(client, message):
         count, commit_url, login = await asyncio.to_thread(
             _publish_zip, owner, repo, branch, credentials[1], credentials[0], downloaded, commit_message
         )
-        result = (f"<b>GitHub upload successful</b>\n\n"
-                  f"Repository: <code>{html.escape(owner)}/{html.escape(repo)}</code>\nBranch: <code>{html.escape(branch)}</code>\n"
-                  f"Files uploaded: <code>{count}</code>\nCommit message: <code>{html.escape(commit_message)}</code>\nBranch contents replaced: <b>Yes</b>\nAuthenticated account: <code>{login}</code>")
+        result = (
+            f"<b>GitHub upload successful</b>\n\n"
+            f"Repository: <code>{html.escape(owner)}/{html.escape(repo)}</code>\nBranch: <code>{html.escape(branch)}</code>\n"
+            f"Files uploaded: <code>{count}</code>\nCommit message: <code>{html.escape(commit_message)}</code>\n"
+            f"Branch contents replaced: <b>Yes</b>\nAuthenticated account: <code>{html.escape(login)}</code>"
+        )
         if commit_url:
-            result += f"\n<a href=\"{commit_url}\">View commit</a>"
+            result += f"\n<a href=\"{html.escape(commit_url, quote=True)}\">View commit</a>"
         await status.edit_text(result, disable_web_page_preview=True)
     except Exception as exc:
         log.exception("GitHub ZIP upload failed for user %s to %s/%s:%s", message.from_user.id, owner, repo, branch)
         detail = str(exc)[:500]
-        await status.edit_text(
-            f"<b>GitHub upload failed</b>\n\nRepository: <code>{html.escape(owner)}/{html.escape(repo)}</code>\n"
-            f"Branch: <code>{html.escape(branch)}</code>\nCommit message: <code>{html.escape(commit_message)}</code>\nReason: <code>{html.escape(detail)}</code>\n\n"
-            "Check that your PAT has Contents: Read and write access and that the branch is writable."
-        )
+        hint = "Check that your PAT has Contents: Read and write access and that the branch is writable."
+        if "rate limit" in detail.lower():
+            hint = "GitHub rate-limited the upload even after automatic retries. Wait 1–2 minutes and try again."
+        try:
+            await status.edit_text(
+                f"<b>GitHub upload failed</b>\n\nRepository: <code>{html.escape(owner)}/{html.escape(repo)}</code>\n"
+                f"Branch: <code>{html.escape(branch)}</code>\nCommit message: <code>{html.escape(commit_message)}</code>\n"
+                f"Reason: <code>{html.escape(detail)}</code>\n\n{hint}"
+            )
+        except Exception:
+            log.warning("Failed to edit status message for user %s", message.from_user.id)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
