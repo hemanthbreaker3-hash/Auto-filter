@@ -1,4 +1,4 @@
-"""Per-user GitHub credential setup and safe ZIP-to-branch publishing."""
+"""Per-user GitHub credential setup and high-speed ZIP-to-branch publishing."""
 import asyncio
 import base64
 import hashlib
@@ -8,6 +8,7 @@ import os
 import random
 import re
 import shutil
+import subprocess
 import tempfile
 import threading
 import time
@@ -29,7 +30,7 @@ GITHUB_API = "https://api.github.com"
 MAX_ZIP_BYTES = 50 * 1024 * 1024
 MAX_UNPACKED_BYTES = 1024 * 1024 * 1024  # 1 GiB safety ceiling
 MAX_FILES = 10000
-# Keep concurrency modest for POST /git/blobs to avoid triggering GitHub secondary rate limits.
+# Keep REST fallback concurrency modest to avoid triggering GitHub secondary rate limits.
 BLOB_WORKERS = 4
 MAX_API_RETRIES = 6
 RETRYABLE_STATUS_CODES = {403, 429, 500, 502, 503, 504}
@@ -335,6 +336,193 @@ def _fetch_existing_blob_shas(owner, repo, commit_sha, token, session, rate_limi
         return set()
 
 
+def _run_git(args, cwd=None, env=None, token=None, timeout=300):
+    proc = subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or f"git {args[0]} failed").strip()
+        if token:
+            err = err.replace(token, "***")
+        raise RuntimeError(err[:400])
+    return proc.stdout.strip()
+
+
+def _publish_zip_via_git(
+    owner,
+    repo,
+    branch,
+    token,
+    actual_login,
+    entries,
+    commit_message,
+    branch_exists,
+    clone_branch,
+    repo_is_empty,
+):
+    """High-speed packfile upload using native git CLI (single HTTPS push for 1,000+ files)."""
+    work_root = tempfile.mkdtemp(prefix="mzf_gitpush_")
+    try:
+        askpass_path = os.path.join(work_root, "askpass.sh")
+        with open(askpass_path, "w", encoding="utf-8") as fh:
+            fh.write(
+                "#!/bin/sh\n"
+                "case \"$1\" in\n"
+                "  *Username*) printf '%s\\n' \"$GH_ASKPASS_USER\" ;;\n"
+                "  *) printf '%s\\n' \"$GH_ASKPASS_TOKEN\" ;;\n"
+                "esac\n"
+            )
+        os.chmod(askpass_path, 0o700)
+
+        env = {
+            **os.environ,
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_ASKPASS": askpass_path,
+            "GH_ASKPASS_USER": actual_login,
+            "GH_ASKPASS_TOKEN": token,
+        }
+        repo_url = f"https://github.com/{quote(owner)}/{quote(repo)}.git"
+        repo_dir = os.path.join(work_root, "repo")
+
+        if not repo_is_empty:
+            _run_git(
+                ["clone", "--depth", "1", "--branch", clone_branch, "--single-branch", repo_url, repo_dir],
+                env=env,
+                token=token,
+                timeout=300,
+            )
+            if not branch_exists:
+                _run_git(["checkout", "-B", branch], cwd=repo_dir, env=env, token=token)
+            # Replace the entire branch tree: remove all existing files before writing ZIP entries.
+            for name in os.listdir(repo_dir):
+                if name == ".git":
+                    continue
+                target = os.path.join(repo_dir, name)
+                if os.path.isdir(target) and not os.path.islink(target):
+                    shutil.rmtree(target)
+                else:
+                    os.unlink(target)
+        else:
+            os.makedirs(repo_dir, exist_ok=True)
+            _run_git(["init"], cwd=repo_dir, env=env, token=token)
+            _run_git(["checkout", "-B", branch], cwd=repo_dir, env=env, token=token)
+            _run_git(["remote", "add", "origin", repo_url], cwd=repo_dir, env=env, token=token)
+
+        for rel_path, content in entries:
+            dest_path = os.path.join(repo_dir, *rel_path.split("/"))
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            with open(dest_path, "wb") as fh:
+                fh.write(content)
+
+        _run_git(["config", "user.name", actual_login], cwd=repo_dir, env=env, token=token)
+        _run_git(["config", "user.email", f"{actual_login}@users.noreply.github.com"], cwd=repo_dir, env=env, token=token)
+        _run_git(["add", "-A"], cwd=repo_dir, env=env, token=token)
+
+        status_out = _run_git(["status", "--porcelain"], cwd=repo_dir, env=env, token=token)
+        if not status_out and branch_exists:
+            head_sha = _run_git(["rev-parse", "HEAD"], cwd=repo_dir, env=env, token=token)
+            return len(entries), f"https://github.com/{quote(owner)}/{quote(repo)}/commit/{head_sha}", actual_login.lower()
+
+        _run_git(["commit", "-m", commit_message], cwd=repo_dir, env=env, token=token)
+        try:
+            _run_git(["push", "origin", f"refs/heads/{branch}"], cwd=repo_dir, env=env, token=token, timeout=300)
+        except RuntimeError as exc:
+            err_lower = str(exc).lower()
+            if "non-fast-forward" in err_lower or "fetch first" in err_lower or "rejected" in err_lower:
+                raise RuntimeError("Branch changed during upload. No force push was performed; retry the command.") from exc
+            if "workflow" in err_lower and "scope" in err_lower:
+                raise RuntimeError("PAT lacks 'workflow' scope required to push .github/workflows files.") from exc
+            raise
+
+        head_sha = _run_git(["rev-parse", "HEAD"], cwd=repo_dir, env=env, token=token)
+        return len(entries), f"https://github.com/{quote(owner)}/{quote(repo)}/commit/{head_sha}", actual_login.lower()
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
+
+
+def _publish_zip_via_api(
+    owner,
+    repo,
+    branch,
+    token,
+    authenticated_login,
+    entries,
+    commit_message,
+    branch_exists,
+    parent_sha,
+    session,
+    rate_limiter,
+):
+    """Fallback Git Data REST API uploader with deduplication and 403 rate-limit backoff."""
+    branch_path = quote(branch, safe="")
+    if not branch_exists:
+        _gh_request(
+            "POST", f"/repos/{owner}/{repo}/git/refs", token,
+            session=session, rate_limiter=rate_limiter,
+            json={"ref": f"refs/heads/{branch}", "sha": parent_sha},
+        )
+
+    existing_shas = _fetch_existing_blob_shas(owner, repo, parent_sha, token, session, rate_limiter)
+    entry_shas = [_git_blob_sha(content) for _, content in entries]
+    blobs_to_upload = {}
+    for (_, content), sha in zip(entries, entry_shas):
+        if sha not in existing_shas and sha not in blobs_to_upload:
+            blobs_to_upload[sha] = content
+
+    uploaded_shas = {}
+    if blobs_to_upload:
+        def upload_blob(item):
+            local_sha, content = item
+            blob = _gh_request(
+                "POST", f"/repos/{owner}/{repo}/git/blobs", token,
+                session=session, rate_limiter=rate_limiter,
+                json={"content": base64.b64encode(content).decode("ascii"), "encoding": "base64"},
+            )
+            return local_sha, blob["sha"]
+
+        with ThreadPoolExecutor(max_workers=BLOB_WORKERS) as pool:
+            futures = [pool.submit(upload_blob, item) for item in blobs_to_upload.items()]
+            for future in as_completed(futures):
+                local_sha, remote_sha = future.result()
+                uploaded_shas[local_sha] = remote_sha
+
+    tree_items = [
+        {
+            "path": path,
+            "mode": "100644",
+            "type": "blob",
+            "sha": sha if sha in existing_shas else uploaded_shas[sha],
+        }
+        for (path, _), sha in zip(entries, entry_shas)
+    ]
+
+    # Omitting base_tree replaces the entire branch tree so stale files are removed.
+    tree = _gh_request(
+        "POST", f"/repos/{owner}/{repo}/git/trees", token,
+        session=session, rate_limiter=rate_limiter,
+        json={"tree": tree_items},
+    )
+    commit = _gh_request(
+        "POST", f"/repos/{owner}/{repo}/git/commits", token,
+        session=session, rate_limiter=rate_limiter,
+        json={"message": commit_message, "tree": tree["sha"], "parents": [parent_sha]},
+    )
+    try:
+        _gh_request(
+            "PATCH", f"/repos/{owner}/{repo}/git/refs/heads/{branch_path}", token,
+            session=session, rate_limiter=rate_limiter,
+            json={"sha": commit["sha"], "force": False},
+        )
+    except RuntimeError as exc:
+        raise RuntimeError("Branch changed during upload. No force push was performed; retry the command.") from exc
+    return len(entries), commit.get("html_url"), authenticated_login
+
+
 def _publish_zip(owner, repo, branch, token, expected_login, zip_path, commit_message):
     session = _create_session()
     rate_limiter = _GitHubRateLimiter()
@@ -352,93 +540,69 @@ def _publish_zip(owner, repo, branch, token, expected_login, zip_path, commit_me
             raise RuntimeError("This token does not have push access to the repository")
 
         branch_path = quote(branch, safe="")
+        branch_exists = False
+        repo_is_empty = False
+        clone_branch = branch
+        parent_sha = None
+
         try:
             ref = _gh_request("GET", f"/repos/{owner}/{repo}/git/ref/heads/{branch_path}", token, session=session, rate_limiter=rate_limiter)
             parent_sha = ref["object"]["sha"]
+            branch_exists = True
         except RuntimeError as exc:
             err_text = str(exc)
             if "404" not in err_text and "409" not in err_text:
                 raise
-            default_branch = repository.get("default_branch")
-            if not default_branch:
-                raise RuntimeError("Could not determine the repository default branch")
+            default_branch = repository.get("default_branch") or "main"
             try:
                 default_ref = _gh_request(
                     "GET", f"/repos/{owner}/{repo}/git/ref/heads/{quote(default_branch, safe='')}",
                     token, session=session, rate_limiter=rate_limiter,
                 )
+                parent_sha = default_ref["object"]["sha"]
+                clone_branch = default_branch
             except RuntimeError as default_exc:
                 if "404" in str(default_exc) or "409" in str(default_exc):
-                    raise RuntimeError(
-                        "Repository is empty (no initial commit). Initialize it with a README on GitHub first, then retry."
-                    ) from default_exc
-                raise
-            parent_sha = default_ref["object"]["sha"]
-            # Create requested branch from the repository's default branch only.
-            _gh_request(
-                "POST", f"/repos/{owner}/{repo}/git/refs", token,
-                session=session, rate_limiter=rate_limiter,
-                json={"ref": f"refs/heads/{branch}", "sha": parent_sha},
-            )
+                    repo_is_empty = True
+                else:
+                    raise
 
-        # Build a complete replacement tree from the ZIP, not an overlay on the old tree.
-        # Omitting base_tree makes this a new root tree: files absent from the ZIP are removed.
         entries = _zip_entries(zip_path)
-        existing_shas = _fetch_existing_blob_shas(owner, repo, parent_sha, token, session, rate_limiter)
 
-        entry_shas = [_git_blob_sha(content) for _, content in entries]
-        blobs_to_upload = {}
-        for (_, content), sha in zip(entries, entry_shas):
-            if sha not in existing_shas and sha not in blobs_to_upload:
-                blobs_to_upload[sha] = content
-
-        uploaded_shas = {}
-        if blobs_to_upload:
-            def upload_blob(item):
-                local_sha, content = item
-                blob = _gh_request(
-                    "POST", f"/repos/{owner}/{repo}/git/blobs", token,
-                    session=session, rate_limiter=rate_limiter,
-                    json={"content": base64.b64encode(content).decode("ascii"), "encoding": "base64"},
-                )
-                return local_sha, blob["sha"]
-
-            with ThreadPoolExecutor(max_workers=BLOB_WORKERS) as pool:
-                futures = [pool.submit(upload_blob, item) for item in blobs_to_upload.items()]
-                for future in as_completed(futures):
-                    local_sha, remote_sha = future.result()
-                    uploaded_shas[local_sha] = remote_sha
-
-        tree_items = [
-            {
-                "path": path,
-                "mode": "100644",
-                "type": "blob",
-                "sha": sha if sha in existing_shas else uploaded_shas[sha],
-            }
-            for (path, _), sha in zip(entries, entry_shas)
-        ]
-
-        tree = _gh_request(
-            "POST", f"/repos/{owner}/{repo}/git/trees", token,
-            session=session, rate_limiter=rate_limiter,
-            json={"tree": tree_items},
-        )
-        commit = _gh_request(
-            "POST", f"/repos/{owner}/{repo}/git/commits", token,
-            session=session, rate_limiter=rate_limiter,
-            json={"message": commit_message, "tree": tree["sha"], "parents": [parent_sha]},
-        )
-        try:
-            _gh_request(
-                "PATCH", f"/repos/{owner}/{repo}/git/refs/heads/{branch_path}", token,
-                session=session, rate_limiter=rate_limiter,
-                json={"sha": commit["sha"], "force": False},
+        # Prefer native git packfile push for high-speed 1,000+ file uploads without REST blob rate limits.
+        if shutil.which("git"):
+            return _publish_zip_via_git(
+                owner=owner,
+                repo=repo,
+                branch=branch,
+                token=token,
+                actual_login=actual_login,
+                entries=entries,
+                commit_message=commit_message,
+                branch_exists=branch_exists,
+                clone_branch=clone_branch,
+                repo_is_empty=repo_is_empty,
             )
-        except RuntimeError:
-            # A concurrent branch update is not force-pushed; report conflict safely.
-            raise RuntimeError("Branch changed during upload. No force push was performed; retry the command.")
-        return len(entries), commit.get("html_url"), authenticated_login
+
+        if repo_is_empty:
+            raise RuntimeError(
+                "Repository is empty (no initial commit) and git CLI is unavailable. "
+                "Initialize the repository with a README on GitHub first, then retry."
+            )
+
+        return _publish_zip_via_api(
+            owner=owner,
+            repo=repo,
+            branch=branch,
+            token=token,
+            authenticated_login=authenticated_login,
+            entries=entries,
+            commit_message=commit_message,
+            branch_exists=branch_exists,
+            parent_sha=parent_sha,
+            session=session,
+            rate_limiter=rate_limiter,
+        )
     finally:
         session.close()
 
